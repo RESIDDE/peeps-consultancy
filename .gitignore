@@ -1,0 +1,11 @@
+node_modules
+.next
+out
+.env*.local
+.env
+peeps.db*
+uploads/*
+!uploads/.gitkeep
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store
