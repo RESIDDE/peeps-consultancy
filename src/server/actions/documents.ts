@@ -1,17 +1,14 @@
 "use server";
 
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { candidates, documents } from "@/db/schema";
+import { candidates, documentFiles, documents } from "@/db/schema";
 import { fail, ok, type ActionState } from "@/lib/action-state";
 import { AuthzError, getSession, STAFF } from "@/lib/permissions";
 import type { Role } from "@/db/schema";
 import { logActivity } from "../activity";
 import { str } from "../forms";
-import { UPLOAD_DIR } from "../uploads";
 
 const ALLOWED: Record<string, string> = {
   "application/pdf": ".pdf",
@@ -41,17 +38,20 @@ export async function uploadDocument(_: ActionState, fd: FormData): Promise<Acti
     if (file.size > MAX_BYTES) return fail("Files must be 5 MB or smaller.", { file: ["Too large"] });
     const kind = KINDS.includes(str(fd, "kind")) ? str(fd, "kind") : "other";
 
-    const storedName = `${crypto.randomUUID()}${ext}`;
-    await mkdir(UPLOAD_DIR, { recursive: true });
-    await writeFile(path.join(/*turbopackIgnore: true*/ UPLOAD_DIR, storedName), Buffer.from(await file.arrayBuffer()));
-    await db.insert(documents).values({
-      candidateId,
-      kind,
-      filename: file.name.slice(0, 200),
-      storedName,
-      mimeType: file.type,
-      size: file.size,
-      uploadedById: session.user.id,
+    const data = Buffer.from(await file.arrayBuffer());
+    await db.transaction(async (tx) => {
+      const [doc] = await tx
+        .insert(documents)
+        .values({
+          candidateId,
+          kind,
+          filename: file.name.slice(0, 200),
+          mimeType: file.type,
+          size: file.size,
+          uploadedById: session.user.id,
+        })
+        .returning({ id: documents.id });
+      await tx.insert(documentFiles).values({ documentId: doc.id, data });
     });
     await logActivity(session.user.id, "candidate", candidateId, "document_uploaded", `${kind}: ${file.name}`);
     revalidatePath("/portal", "layout");

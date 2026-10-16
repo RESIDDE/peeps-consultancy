@@ -18,15 +18,34 @@ import { fieldErrors, int, str, zEmail, zPhone, zRequired } from "../forms";
 
 const password = z.string().min(8, "Use at least 8 characters").max(128);
 
+const EMAIL_TAKEN = "An account with this email already exists. Try signing in.";
+
 function authMessage(e: unknown): string {
   if (e instanceof APIError) {
     const msg = e.body?.message ?? e.message;
-    if (/exist/i.test(msg)) return "An account with this email already exists. Try signing in.";
+    if (/exist/i.test(msg)) return EMAIL_TAKEN;
     if (/invalid/i.test(msg)) return "Incorrect email or password.";
     return msg;
   }
   console.error(e);
   return "Something went wrong. Please try again.";
+}
+
+/**
+ * With autoSignIn off, Better Auth answers a duplicate sign-up with a synthetic
+ * user instead of an error, so check up front to keep the explicit message.
+ */
+async function emailTaken(email: string) {
+  const [row] = await db.select({ id: user.id }).from(user).where(eq(user.email, email.toLowerCase()));
+  return Boolean(row);
+}
+
+/** Undo a just-created auth user when the profile write fails, so the email can register again. */
+async function discardUser(id: string) {
+  await db
+    .delete(user)
+    .where(eq(user.id, id))
+    .catch((e) => console.error(e));
 }
 
 function safeNext(next: string): string | null {
@@ -78,12 +97,15 @@ export async function registerCandidate(_: ActionState, fd: FormData): Promise<A
   });
   if (!parsed.success) return fail("Please check the highlighted fields.", fieldErrors(parsed.error));
   const d = parsed.data;
+  if (await emailTaken(d.email)) return fail(EMAIL_TAKEN);
 
+  let pendingUserId: string | null = null;
   try {
     const res = await auth.api.signUpEmail({
       body: { name: `${d.firstName} ${d.lastName}`, email: d.email, password: d.password },
       headers: await headers(),
     });
+    pendingUserId = res.user.id;
     const pepId = await issuePepId(d.sectorCode);
     const [c] = await db
       .insert(candidates)
@@ -103,8 +125,11 @@ export async function registerCandidate(_: ActionState, fd: FormData): Promise<A
         consentVersion: CONSENT_VERSION,
       })
       .returning({ id: candidates.id });
+    pendingUserId = null;
+    await auth.api.signInEmail({ body: { email: d.email, password: d.password }, headers: await headers() });
     await logActivity(res.user.id, "candidate", c.id, "registered", `Self-registered as ${pepId}`);
   } catch (e) {
+    if (pendingUserId) await discardUser(pendingUserId);
     return fail(authMessage(e));
   }
   redirect("/portal/candidate?welcome=1");
@@ -134,36 +159,47 @@ export async function registerEmployer(_: ActionState, fd: FormData): Promise<Ac
   });
   if (!parsed.success) return fail("Please check the highlighted fields.", fieldErrors(parsed.error));
   const d = parsed.data;
+  if (await emailTaken(d.email)) return fail(EMAIL_TAKEN);
 
+  let pendingUserId: string | null = null;
   try {
     const res = await auth.api.signUpEmail({
       body: { name: d.name, email: d.email, password: d.password },
       headers: await headers(),
     });
-    await db.update(user).set({ role: "employer" }).where(eq(user.id, res.user.id));
-    const [emp] = await db
-      .insert(employers)
-      .values({
-        name: d.company,
-        industry: d.industry || null,
-        city: d.city,
-        crmStage: "discovery",
-        source: "website",
-        nextAction: "Welcome call and vacancy analysis",
-        nextActionAt: new Date(Date.now() + 86_400_000),
-      })
-      .returning({ id: employers.id });
-    await db.insert(employerContacts).values({
-      employerId: emp.id,
-      userId: res.user.id,
-      name: d.name,
-      role: d.role || null,
-      email: d.email,
-      phone: d.phone || null,
-      isPrimary: true,
+    pendingUserId = res.user.id;
+    // All-or-nothing: an employer login without a linked company would 404 on its dashboard.
+    const emp = await db.transaction(async (tx) => {
+      await tx.update(user).set({ role: "employer" }).where(eq(user.id, res.user.id));
+      const [row] = await tx
+        .insert(employers)
+        .values({
+          name: d.company,
+          industry: d.industry || null,
+          city: d.city,
+          crmStage: "discovery",
+          source: "website",
+          nextAction: "Welcome call and vacancy analysis",
+          nextActionAt: new Date(Date.now() + 86_400_000),
+        })
+        .returning({ id: employers.id });
+      await tx.insert(employerContacts).values({
+        employerId: row.id,
+        userId: res.user.id,
+        name: d.name,
+        role: d.role || null,
+        email: d.email,
+        phone: d.phone || null,
+        isPrimary: true,
+      });
+      return row;
     });
+    pendingUserId = null;
+    // Signed in only now, so the session already carries the employer role.
+    await auth.api.signInEmail({ body: { email: d.email, password: d.password }, headers: await headers() });
     await logActivity(res.user.id, "employer", emp.id, "registered", "Employer self-registered");
   } catch (e) {
+    if (pendingUserId) await discardUser(pendingUserId);
     return fail(authMessage(e));
   }
   redirect("/portal/employer?welcome=1");

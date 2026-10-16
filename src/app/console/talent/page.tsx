@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { and, desc, eq, like, or, type SQL } from "drizzle-orm";
+import { and, desc, eq, ilike, or, type SQL } from "drizzle-orm";
 import { Search, Users } from "lucide-react";
 import { db } from "@/db";
 import { candidates } from "@/db/schema";
@@ -21,7 +21,7 @@ export default async function TalentRegistry({ searchParams }: { searchParams: P
   const where: SQL[] = [];
   if (sp.q) {
     const q = `%${sp.q.trim()}%`;
-    where.push(or(like(candidates.firstName, q), like(candidates.lastName, q), like(candidates.pepId, q), like(candidates.profession, q), like(candidates.email, q))!);
+    where.push(or(ilike(candidates.firstName, q), ilike(candidates.lastName, q), ilike(candidates.pepId, q), ilike(candidates.profession, q), ilike(candidates.email, q))!);
   }
   if (sp.sector) where.push(eq(candidates.sectorCode, sp.sector));
   if (sp.stage) where.push(eq(candidates.stage, sp.stage));

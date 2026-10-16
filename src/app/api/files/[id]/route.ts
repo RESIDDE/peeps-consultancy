@@ -1,11 +1,8 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { candidates, documents } from "@/db/schema";
+import { candidates, documentFiles, documents } from "@/db/schema";
 import { getSession, STAFF } from "@/lib/permissions";
 import type { Role } from "@/db/schema";
-import { UPLOAD_DIR } from "@/server/uploads";
 
 /** Serves an uploaded document to staff or to the candidate who owns it. */
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -13,7 +10,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   if (!session) return new Response("Unauthorized", { status: 401 });
   const { id } = await params;
   const [doc] = await db
-    .select({ storedName: documents.storedName, filename: documents.filename, mimeType: documents.mimeType, ownerId: candidates.userId })
+    .select({ filename: documents.filename, mimeType: documents.mimeType, ownerId: candidates.userId })
     .from(documents)
     .innerJoin(candidates, eq(candidates.id, documents.candidateId))
     .where(eq(documents.id, id));
@@ -22,18 +19,15 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   if (!STAFF.includes(role) && !(role === "candidate" && doc.ownerId === session.user.id)) {
     return new Response("Forbidden", { status: 403 });
   }
-  const filePath = path.join(/*turbopackIgnore: true*/ UPLOAD_DIR, path.basename(doc.storedName));
-  try {
-    const data = await readFile(filePath);
-    return new Response(new Uint8Array(data), {
-      headers: {
-        "Content-Type": doc.mimeType,
-        "Content-Disposition": `inline; filename="${doc.filename.replace(/["\\\r\n]/g, "")}"`,
-        "X-Content-Type-Options": "nosniff",
-        "Cache-Control": "private, no-store",
-      },
-    });
-  } catch {
-    return new Response("File missing", { status: 404 });
-  }
+  // Bytes are only loaded once access is confirmed.
+  const [file] = await db.select({ data: documentFiles.data }).from(documentFiles).where(eq(documentFiles.documentId, id));
+  if (!file) return new Response("File missing", { status: 404 });
+  return new Response(new Uint8Array(file.data), {
+    headers: {
+      "Content-Type": doc.mimeType,
+      "Content-Disposition": `inline; filename="${doc.filename.replace(/["\\\r\n]/g, "")}"`,
+      "X-Content-Type-Options": "nosniff",
+      "Cache-Control": "private, no-store",
+    },
+  });
 }

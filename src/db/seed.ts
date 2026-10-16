@@ -209,6 +209,12 @@ const LEVEL_ORDER: Level[] = ["registered", "screened", "verified", "assessed", 
 const atLeast = (lvl: Level, target: Level) => LEVEL_ORDER.indexOf(lvl) >= LEVEL_ORDER.indexOf(target);
 
 async function main() {
+  // Demo accounts share a published password, so never seed anything but the dev database.
+  if (process.env.PEEPS_DEV_DB !== "1") {
+    console.error("db:seed only runs against the dev database (PEEPS_DEV_DB=1 in .env.local). Refusing.");
+    process.exitCode = 1;
+    return;
+  }
   const existing = await db.select({ id: s.user.id }).from(s.user).limit(1);
   if (existing.length) {
     console.log("Database already has users — run `npm run db:reset` to wipe and reseed.");
@@ -705,7 +711,9 @@ async function main() {
   console.log("  candidate@peeps.local  — Candidate portal (Chiamaka Okafor)");
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exitCode = 1;
+  })
+  .finally(() => db.$client.end());

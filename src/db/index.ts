@@ -1,17 +1,13 @@
-import { createClient } from "@libsql/client";
-import { drizzle } from "drizzle-orm/libsql";
+import postgres from "postgres";
+import { drizzle } from "drizzle-orm/postgres-js";
 import * as schema from "./schema";
 
-const globalForDb = globalThis as unknown as { libsql?: ReturnType<typeof createClient> };
+const globalForDb = globalThis as unknown as { pg?: ReturnType<typeof postgres> };
 
-const client =
-  globalForDb.libsql ??
-  createClient({
-    url: process.env.DATABASE_URL ?? "file:peeps.db",
-    authToken: process.env.DATABASE_AUTH_TOKEN || undefined,
-  });
+// postgres.js connects lazily, so importing this during `next build` never opens a connection.
+const client = globalForDb.pg ?? postgres(process.env.DATABASE_URL ?? "postgres://localhost:5432/peeps", { max: 10 });
 
-if (process.env.NODE_ENV !== "production") globalForDb.libsql = client;
+if (process.env.NODE_ENV !== "production") globalForDb.pg = client;
 
 export const db = drizzle({ client, schema });
 export type DB = typeof db;

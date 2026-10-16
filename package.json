@@ -2,6 +2,9 @@
   "name": "peeps-hr-partners",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22.12"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -9,9 +12,10 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "db:push": "drizzle-kit push",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "node --env-file-if-exists=.env.local scripts/migrate.mjs",
     "db:seed": "tsx --env-file-if-exists=.env.local src/db/seed.ts",
-    "db:reset": "tsx --env-file-if-exists=.env.local src/db/reset.ts && drizzle-kit push --force && npm run db:seed"
+    "db:reset": "tsx --env-file-if-exists=.env.local src/db/reset.ts && npm run db:migrate && npm run db:seed"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
@@ -28,7 +32,6 @@
     "vitest": "^5.0.3"
   },
   "dependencies": {
-    "@libsql/client": "^0.18.0",
     "better-auth": "^1.7.7",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -36,6 +39,7 @@
     "lucide-react": "^1.52.0",
     "motion": "^14.0.0",
     "next": "^16.3.8",
+    "postgres": "^3.4.9",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "recharts": "^3.10.1",

@@ -21,7 +21,7 @@ function trustedOrigins(request?: Request): string[] {
 export const auth = betterAuth({
   trustedOrigins,
   database: drizzleAdapter(db, {
-    provider: "sqlite",
+    provider: "pg",
     schema: {
       user: schema.user,
       session: schema.session,
@@ -32,7 +32,9 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 8,
-    autoSignIn: true,
+    // Registration signs in itself once the profile and role are saved; signing in at
+    // sign-up would cache the default "candidate" role in the session cookie.
+    autoSignIn: false,
   },
   user: {
     additionalFields: {

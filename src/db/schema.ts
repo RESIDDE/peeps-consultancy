@@ -1,20 +1,17 @@
-import { sql } from "drizzle-orm";
-import { integer, sqliteTable, text, uniqueIndex, index } from "drizzle-orm/sqlite-core";
+import { boolean, customType, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
 const id = () =>
   text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID());
-const createdAt = () =>
-  integer("created_at", { mode: "timestamp_ms" })
-    .notNull()
-    .default(sql`(unixepoch() * 1000)`);
+const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
 const updatedAt = () =>
-  integer("updated_at", { mode: "timestamp_ms" })
+  timestamp("updated_at", { withTimezone: true })
     .notNull()
-    .default(sql`(unixepoch() * 1000)`)
+    .defaultNow()
     .$onUpdate(() => new Date());
-const json = <T>(name: string) => text(name, { mode: "json" }).$type<T>();
+const json = <T>(name: string) => jsonb(name).$type<T>();
+const bytea = customType<{ data: Buffer }>({ dataType: () => "bytea" });
 
 /* ------------------------------------------------------------------ */
 /* Better Auth                                                         */
@@ -23,20 +20,20 @@ const json = <T>(name: string) => text(name, { mode: "json" }).$type<T>();
 export const ROLES = ["admin", "recruiter", "employer", "candidate"] as const;
 export type Role = (typeof ROLES)[number];
 
-export const user = sqliteTable("user", {
+export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
-  emailVerified: integer("email_verified", { mode: "boolean" }).notNull().default(false),
+  emailVerified: boolean("email_verified").notNull().default(false),
   image: text("image"),
   role: text("role").$type<Role>().notNull().default("candidate"),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });
 
-export const session = sqliteTable("session", {
+export const session = pgTable("session", {
   id: text("id").primaryKey(),
-  expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   token: text("token").notNull().unique(),
   ipAddress: text("ip_address"),
   userAgent: text("user_agent"),
@@ -47,7 +44,7 @@ export const session = sqliteTable("session", {
   updatedAt: updatedAt(),
 });
 
-export const account = sqliteTable("account", {
+export const account = pgTable("account", {
   id: text("id").primaryKey(),
   accountId: text("account_id").notNull(),
   providerId: text("provider_id").notNull(),
@@ -57,19 +54,19 @@ export const account = sqliteTable("account", {
   accessToken: text("access_token"),
   refreshToken: text("refresh_token"),
   idToken: text("id_token"),
-  accessTokenExpiresAt: integer("access_token_expires_at", { mode: "timestamp_ms" }),
-  refreshTokenExpiresAt: integer("refresh_token_expires_at", { mode: "timestamp_ms" }),
+  accessTokenExpiresAt: timestamp("access_token_expires_at", { withTimezone: true }),
+  refreshTokenExpiresAt: timestamp("refresh_token_expires_at", { withTimezone: true }),
   scope: text("scope"),
   password: text("password"),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });
 
-export const verification = sqliteTable("verification", {
+export const verification = pgTable("verification", {
   id: text("id").primaryKey(),
   identifier: text("identifier").notNull(),
   value: text("value").notNull(),
-  expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });
@@ -93,7 +90,7 @@ export interface ExperienceEntry {
   summary?: string;
 }
 
-export const partners = sqliteTable("partners", {
+export const partners = pgTable("partners", {
   id: id(),
   name: text("name").notNull(),
   type: text("type").notNull(),
@@ -106,7 +103,7 @@ export const partners = sqliteTable("partners", {
   createdAt: createdAt(),
 });
 
-export const candidates = sqliteTable(
+export const candidates = pgTable(
   "candidates",
   {
     id: id(),
@@ -128,7 +125,7 @@ export const candidates = sqliteTable(
     availability: text("availability"),
     employmentTypes: json<string[]>("employment_types").notNull().default([]),
     preferredLocations: json<string[]>("preferred_locations").notNull().default([]),
-    willingToRelocate: integer("willing_to_relocate", { mode: "boolean" }).notNull().default(false),
+    willingToRelocate: boolean("willing_to_relocate").notNull().default(false),
     salaryMin: integer("salary_min"),
     salaryMax: integer("salary_max"),
     skills: json<string[]>("skills").notNull().default([]),
@@ -143,7 +140,7 @@ export const candidates = sqliteTable(
     classificationRationale: text("classification_rationale"),
     source: text("source").notNull().default("website"),
     partnerId: text("partner_id").references(() => partners.id, { onDelete: "set null" }),
-    consentAt: integer("consent_at", { mode: "timestamp_ms" }),
+    consentAt: timestamp("consent_at", { withTimezone: true }),
     consentVersion: text("consent_version"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
@@ -151,7 +148,7 @@ export const candidates = sqliteTable(
   (t) => [index("candidates_sector_idx").on(t.sectorCode), index("candidates_stage_idx").on(t.stage)],
 );
 
-export const verificationChecks = sqliteTable(
+export const verificationChecks = pgTable(
   "verification_checks",
   {
     id: id(),
@@ -162,13 +159,13 @@ export const verificationChecks = sqliteTable(
     status: text("status").notNull().default("pending"),
     notes: text("notes"),
     verifiedById: text("verified_by_id").references(() => user.id, { onDelete: "set null" }),
-    verifiedAt: integer("verified_at", { mode: "timestamp_ms" }),
+    verifiedAt: timestamp("verified_at", { withTimezone: true }),
     updatedAt: updatedAt(),
   },
   (t) => [uniqueIndex("checks_candidate_type_idx").on(t.candidateId, t.type)],
 );
 
-export const assessments = sqliteTable("assessments", {
+export const assessments = pgTable("assessments", {
   id: id(),
   candidateId: text("candidate_id")
     .notNull()
@@ -179,29 +176,36 @@ export const assessments = sqliteTable("assessments", {
   outcome: text("outcome").$type<"recommend" | "develop" | "not_suitable">().notNull(),
   evidence: text("evidence"),
   assessorId: text("assessor_id").references(() => user.id, { onDelete: "set null" }),
-  assessedAt: integer("assessed_at", { mode: "timestamp_ms" }).notNull(),
+  assessedAt: timestamp("assessed_at", { withTimezone: true }).notNull(),
   createdAt: createdAt(),
 });
 
-export const documents = sqliteTable("documents", {
+export const documents = pgTable("documents", {
   id: id(),
   candidateId: text("candidate_id")
     .notNull()
     .references(() => candidates.id, { onDelete: "cascade" }),
   kind: text("kind").notNull(),
   filename: text("filename").notNull(),
-  storedName: text("stored_name").notNull(),
   mimeType: text("mime_type").notNull(),
   size: integer("size").notNull(),
   uploadedById: text("uploaded_by_id").references(() => user.id, { onDelete: "set null" }),
   createdAt: createdAt(),
 });
 
+/** File bytes live apart from `documents` so listing documents never loads them. */
+export const documentFiles = pgTable("document_files", {
+  documentId: text("document_id")
+    .primaryKey()
+    .references(() => documents.id, { onDelete: "cascade" }),
+  data: bytea("data").notNull(),
+});
+
 /* ------------------------------------------------------------------ */
 /* Employers & vacancies                                               */
 /* ------------------------------------------------------------------ */
 
-export const employers = sqliteTable("employers", {
+export const employers = pgTable("employers", {
   id: id(),
   name: text("name").notNull(),
   industry: text("industry"),
@@ -213,14 +217,14 @@ export const employers = sqliteTable("employers", {
   crmStage: text("crm_stage").notNull().default("target"),
   ownerId: text("owner_id").references(() => user.id, { onDelete: "set null" }),
   nextAction: text("next_action"),
-  nextActionAt: integer("next_action_at", { mode: "timestamp_ms" }),
+  nextActionAt: timestamp("next_action_at", { withTimezone: true }),
   source: text("source"),
   membershipTier: text("membership_tier").notNull().default("none"),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });
 
-export const employerContacts = sqliteTable("employer_contacts", {
+export const employerContacts = pgTable("employer_contacts", {
   id: id(),
   employerId: text("employer_id")
     .notNull()
@@ -230,11 +234,11 @@ export const employerContacts = sqliteTable("employer_contacts", {
   role: text("role"),
   email: text("email"),
   phone: text("phone"),
-  isPrimary: integer("is_primary", { mode: "boolean" }).notNull().default(false),
+  isPrimary: boolean("is_primary").notNull().default(false),
   createdAt: createdAt(),
 });
 
-export const vacancies = sqliteTable(
+export const vacancies = pgTable(
   "vacancies",
   {
     id: id(),
@@ -253,18 +257,18 @@ export const vacancies = sqliteTable(
     requiredSkills: json<string[]>("required_skills").notNull().default([]),
     city: text("city"),
     employmentType: text("employment_type").notNull().default("full_time"),
-    deadline: integer("deadline", { mode: "timestamp_ms" }),
+    deadline: timestamp("deadline", { withTimezone: true }),
     package: text("package").notNull().default("professional"),
     status: text("status").notNull().default("received"),
     analysisNotes: text("analysis_notes"),
-    published: integer("published", { mode: "boolean" }).notNull().default(false),
+    published: boolean("published").notNull().default(false),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
   (t) => [index("vacancies_employer_idx").on(t.employerId)],
 );
 
-export const applications = sqliteTable(
+export const applications = pgTable(
   "applications",
   {
     id: id(),
@@ -294,7 +298,7 @@ export interface PlacementFeedback {
   rating: number;
 }
 
-export const placements = sqliteTable("placements", {
+export const placements = pgTable("placements", {
   id: id(),
   applicationId: text("application_id")
     .notNull()
@@ -309,7 +313,7 @@ export const placements = sqliteTable("placements", {
   vacancyId: text("vacancy_id")
     .notNull()
     .references(() => vacancies.id, { onDelete: "cascade" }),
-  startDate: integer("start_date", { mode: "timestamp_ms" }).notNull(),
+  startDate: timestamp("start_date", { withTimezone: true }).notNull(),
   annualSalary: integer("annual_salary"),
   fee: integer("fee").notNull().default(0),
   invoiceStatus: text("invoice_status").notNull().default("draft"),
@@ -317,7 +321,7 @@ export const placements = sqliteTable("placements", {
   retention6m: text("retention_6m").notNull().default("pending"),
   retention12m: text("retention_12m").notNull().default("pending"),
   feedback: json<PlacementFeedback>("feedback"),
-  feedbackAt: integer("feedback_at", { mode: "timestamp_ms" }),
+  feedbackAt: timestamp("feedback_at", { withTimezone: true }),
   createdAt: createdAt(),
 });
 
@@ -325,7 +329,7 @@ export const placements = sqliteTable("placements", {
 /* Operations                                                          */
 /* ------------------------------------------------------------------ */
 
-export const enquiries = sqliteTable("enquiries", {
+export const enquiries = pgTable("enquiries", {
   id: id(),
   type: text("type").notNull(),
   name: text("name").notNull(),
@@ -338,18 +342,18 @@ export const enquiries = sqliteTable("enquiries", {
   createdAt: createdAt(),
 });
 
-export const revenueEntries = sqliteTable("revenue_entries", {
+export const revenueEntries = pgTable("revenue_entries", {
   id: id(),
   stream: text("stream").notNull(),
   amount: integer("amount").notNull(),
-  date: integer("date", { mode: "timestamp_ms" }).notNull(),
+  date: timestamp("date", { withTimezone: true }).notNull(),
   description: text("description"),
   employerId: text("employer_id").references(() => employers.id, { onDelete: "set null" }),
   placementId: text("placement_id").references(() => placements.id, { onDelete: "cascade" }),
   createdAt: createdAt(),
 });
 
-export const notes = sqliteTable(
+export const notes = pgTable(
   "notes",
   {
     id: id(),
@@ -362,7 +366,7 @@ export const notes = sqliteTable(
   (t) => [index("notes_entity_idx").on(t.entity, t.entityId)],
 );
 
-export const activityLog = sqliteTable(
+export const activityLog = pgTable(
   "activity_log",
   {
     id: id(),
