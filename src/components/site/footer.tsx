@@ -38,7 +38,7 @@ export function SiteFooter() {
       <div className="container-page py-16">
         <div className="grid gap-12 lg:grid-cols-[1.3fr_2fr]">
           <div className="max-w-sm">
-            <Logo className="[&_.text-muted-foreground]:text-white/60 [&_.text-primary]:text-gold" />
+            <Logo tone="onDark" />
             <p className="mt-5 text-sm leading-relaxed text-white/70">{COMPANY.positioning}</p>
             <p className="mt-6 font-display text-lg italic text-gold">{COMPANY.tagline}</p>
           </div>

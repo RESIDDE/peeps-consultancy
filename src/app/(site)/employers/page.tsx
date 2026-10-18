@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Check, Crown, Layers, ShieldCheck, Users } from "lucide-react";
-import { PageHero, Section, SectionHeading } from "@/components/site/section";
+import { ArrowRight, Check, Crown, HandCoins, Layers, ListChecks, ShieldCheck, Users } from "lucide-react";
+import { HeroFacts, PageHero, Section, SectionHeading } from "@/components/site/section";
 import { Reveal } from "@/components/site/reveal";
 import { RequestTalentForm } from "@/components/site/forms";
 import { buttonVariants } from "@/components/ui/button";
@@ -36,6 +36,15 @@ export default function EmployersPage() {
           </>
         }
         lead="Tell us the role. We'll work out who will actually succeed in your organisation, then find, verify and assess them. You get a short list where every candidate comes with evidence."
+        aside={
+          <HeroFacts
+            items={[
+              { icon: ListChecks, value: `${EMPLOYER_PROCESS.length} steps`, label: "From vacancy analysis to onboarding" },
+              { icon: Users, value: "Around 5 candidates", label: "Per shortlist, each with an assessment report" },
+              { icon: HandCoins, value: "Success-based", label: "Fees for permanent placements" },
+            ]}
+          />
+        }
       >
         <div className="flex flex-col gap-3 sm:flex-row">
           <a href="#request" className={buttonVariants({ size: "lg" })}>

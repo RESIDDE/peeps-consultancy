@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, BadgeCheck, HeartHandshake } from "lucide-react";
-import { PageHero, Section, SectionHeading } from "@/components/site/section";
+import { ArrowRight, BadgeCheck, ChartColumnIncreasing, HeartHandshake, UserPlus } from "lucide-react";
+import { HeroFacts, PageHero, Section, SectionHeading } from "@/components/site/section";
 import { QualityLadder } from "@/components/site/quality-ladder";
 import { EnquiryForm } from "@/components/site/forms";
 import { buttonVariants } from "@/components/ui/button";
 import { CAREER_SERVICES, SELECTION_STEPS } from "@/lib/content";
+import { STAGES } from "@/lib/quality";
 
 export const metadata: Metadata = {
   title: "For Talent",
@@ -23,6 +24,15 @@ export default function CandidatesPage() {
           </>
         }
         lead="Join the PEEPs Talent Registry free of charge. We verify your credentials and assess your skills, then put you forward for roles where you're a genuine fit. Employers see the evidence, so they see you at your best."
+        aside={
+          <HeroFacts
+            items={[
+              { icon: UserPlus, value: "Free to join", label: "Registration, verification and being put forward" },
+              { icon: ChartColumnIncreasing, value: `${STAGES.length} stages`, label: "On the PEEPs quality ladder, tracked in your dashboard" },
+              { icon: HeartHandshake, value: "No placement fees", label: "Employers pay for recruitment, never you" },
+            ]}
+          />
+        }
       >
         <div className="flex flex-col gap-3 sm:flex-row">
           <Link href="/register/candidate" className={buttonVariants({ size: "lg" })}>

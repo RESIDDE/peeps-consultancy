@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { PageHero, Section } from "@/components/site/section";
+import { buttonVariants } from "@/components/ui/button";
 import { DIVISIONS } from "@/lib/content";
 
 export const metadata: Metadata = { title: "Services", description: "PEEPs Talent, Academy, Professional and Workforce." };
@@ -13,7 +14,16 @@ export default function ServicesPage() {
         eyebrow="Services"
         title="Four divisions. One talent ecosystem."
         lead="Whenever you need people, training or professional support, PEEPs should be one of the first calls you make."
-      />
+      >
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Link href="/employers#request" className={buttonVariants({ size: "lg" })}>
+            Request talent <ArrowRight />
+          </Link>
+          <Link href="/contact" className={buttonVariants({ size: "lg", variant: "outline" })}>
+            Talk to a consultant
+          </Link>
+        </div>
+      </PageHero>
       <Section>
         <div className="grid gap-4 md:grid-cols-2">
           {DIVISIONS.map((d) => (

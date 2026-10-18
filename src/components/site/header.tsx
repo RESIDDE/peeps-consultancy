@@ -64,9 +64,10 @@ export function SiteHeader() {
               <div key={item.href} className="group relative">
                 <Link
                   href={item.href}
+                  aria-current={isActive(item.href) ? "page" : undefined}
                   className={cn(
                     "inline-flex items-center gap-1 rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground",
-                    isActive(item.href) && "text-foreground",
+                    isActive(item.href) && "bg-muted text-foreground",
                   )}
                 >
                   {item.label}
@@ -91,9 +92,10 @@ export function SiteHeader() {
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={isActive(item.href) ? "page" : undefined}
                 className={cn(
                   "rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground",
-                  isActive(item.href) && "text-foreground",
+                  isActive(item.href) && "bg-muted text-foreground",
                 )}
               >
                 {item.label}
@@ -103,19 +105,20 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-1.5">
-          <ThemeToggle />
+          <ThemeToggle className="hidden sm:inline-flex" />
           <Link
             href={accountHref ?? "/sign-in"}
             className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "hidden sm:inline-flex")}
           >
             {accountHref ? "My dashboard" : "Sign in"}
           </Link>
-          <Link href="/employers#request" className={cn(buttonVariants({ size: "sm" }), "hidden sm:inline-flex")}>
+          {/* Visible on phones too: the main action shouldn't hide behind the menu. */}
+          <Link href="/employers#request" className={buttonVariants({ size: "sm" })} onClick={() => setOpen(false)}>
             Request talent
           </Link>
           <button
             type="button"
-            className="inline-flex size-10 items-center justify-center rounded-full hover:bg-muted lg:hidden"
+            className="inline-flex size-11 items-center justify-center rounded-full hover:bg-muted lg:hidden"
             aria-expanded={open}
             aria-controls="mobile-nav"
             aria-label={open ? "Close menu" : "Open menu"}
@@ -169,6 +172,10 @@ export function SiteHeader() {
               >
                 {accountHref ? "My dashboard" : "Sign in"}
               </Link>
+            </div>
+            <div className="mt-4 flex items-center justify-between rounded-xl border px-3 py-1.5 sm:hidden">
+              <span className="text-sm text-muted-foreground">Appearance</span>
+              <ThemeToggle />
             </div>
           </div>
         </nav>

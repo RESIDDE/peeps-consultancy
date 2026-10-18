@@ -17,11 +17,12 @@ export const buttonVariants = cva(
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         onDark: "border border-white/20 bg-white/5 text-white hover:bg-white/10",
       },
+      // Touch screens get 40–44px targets; mouse users keep the compact sizes.
       size: {
-        sm: "h-8 px-3 text-xs",
-        default: "h-10 px-5",
+        sm: "h-8 px-3 text-xs pointer-coarse:h-10",
+        default: "h-10 px-5 pointer-coarse:h-11",
         lg: "h-12 px-7 text-base",
-        icon: "size-9",
+        icon: "size-9 pointer-coarse:size-11",
       },
     },
     defaultVariants: { variant: "default", size: "default" },

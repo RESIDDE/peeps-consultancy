@@ -11,12 +11,12 @@ export function TalentProfileCard({ className }: { className?: string }) {
       <div className="anim-rise overflow-hidden rounded-3xl border bg-card shadow-2xl shadow-black/10">
         <div className="flex items-center justify-between border-b bg-ink px-5 py-3.5 text-ink-foreground">
           <span className="font-mono text-xs tracking-wider text-white/70">{p.pepId}</span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-gold px-2.5 py-0.5 text-[11px] font-semibold text-gold-foreground">
+          <span className="inline-flex items-center gap-1 rounded-full bg-gold px-2.5 py-0.5 text-xs font-semibold text-gold-foreground">
             <BadgeCheck className="size-3" /> PEEPs Ready
           </span>
         </div>
         <div className="p-5 sm:p-6">
-          <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">Sample talent profile</p>
+          <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Sample talent profile</p>
           <h3 className="font-display mt-1 text-2xl font-medium">{p.profession}</h3>
           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-1"><MapPin className="size-3.5" /> {p.location}</span>
@@ -59,7 +59,7 @@ export function TalentProfileCard({ className }: { className?: string }) {
         className="anim-rise absolute -bottom-5 -left-4 hidden rounded-2xl border bg-card px-4 py-3 shadow-xl sm:block"
         style={{ animationDelay: "1500ms" }}
       >
-        <p className="text-[11px] text-muted-foreground">Employer receives</p>
+        <p className="text-xs text-muted-foreground">Employer receives</p>
         <p className="font-display text-lg font-medium">5 candidates, not 100 CVs</p>
       </div>
     </div>

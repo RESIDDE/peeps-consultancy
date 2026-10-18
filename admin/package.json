@@ -1,0 +1,12 @@
+{
+  "name": "peeps-admin",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PEEPs staff console. Shares src/ and node_modules with the main site in the parent folder.",
+  "scripts": {
+    "dev": "next dev -p 3001",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit"
+  }
+}

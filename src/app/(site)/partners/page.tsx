@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { PageHero, Section, SectionHeading } from "@/components/site/section";
+import { HeroPanel, PageHero, Section, SectionHeading } from "@/components/site/section";
 import { BridgeDiagram } from "@/components/site/bridge-diagram";
 import { EnquiryForm } from "@/components/site/forms";
 import { PARTNER_TYPES_COPY } from "@/lib/content";
@@ -20,6 +20,18 @@ export default function PartnersPage() {
           </>
         }
         lead="PEEPs doesn't try to train everyone. We build an ecosystem that can identify, prepare and deploy talent, and our partners are at the centre of it."
+        aside={
+          <HeroPanel title="Who we partner with">
+            <ul className="grid gap-3">
+              {PARTNER_TYPES_COPY.map((p) => (
+                <li key={p.title} className="flex items-center gap-3 text-sm font-medium">
+                  <span className="size-2 shrink-0 rounded-full bg-gold" aria-hidden />
+                  {p.title}
+                </li>
+              ))}
+            </ul>
+          </HeroPanel>
+        }
       />
       <Section tone="ink">
         <BridgeDiagram />

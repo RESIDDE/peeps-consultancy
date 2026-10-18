@@ -70,12 +70,12 @@ export function ConsoleSidebar({
   const body = (
     <div className="flex h-full flex-col gap-6 p-4">
       <Link href="/console" className="px-2 pt-2" onClick={() => setOpen(false)}>
-        <Logo className="[&_.text-muted-foreground]:text-white/50 [&_.text-primary]:text-gold" />
+        <Logo tone="onDark" />
       </Link>
       <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/40">PEEPs Console</p>
       {nav}
       <div className="mt-auto grid gap-3">
-        <Link href="/" className="flex items-center gap-2 px-3 text-xs text-white/50 hover:text-white">
+        <Link href={process.env.NEXT_PUBLIC_SITE_URL ?? "/"} className="flex items-center gap-2 px-3 text-xs text-white/50 hover:text-white">
           <ExternalLink className="size-3.5" /> View public site
         </Link>
         <div className="rounded-xl bg-white/5 p-3">
@@ -92,7 +92,7 @@ export function ConsoleSidebar({
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 bg-ink text-ink-foreground lg:block">{body}</aside>
       <div className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-ink px-4 text-ink-foreground lg:hidden">
         <Link href="/console">
-          <Logo compact className="[&_.text-primary]:text-gold" />
+          <Logo compact tone="onDark" />
         </Link>
         <button
           type="button"

@@ -4,6 +4,7 @@ import { motion, useInView, useReducedMotion } from "motion/react";
 import { useRef } from "react";
 
 const CHOSEN = new Set([13, 37, 52, 68, 86]);
+const START = { backgroundColor: "var(--muted-foreground)", scale: 1, opacity: 0.45 };
 
 /** 100 CVs collapse into 5 evidenced candidates. */
 export function CvFunnel() {
@@ -20,15 +21,17 @@ export function CvFunnel() {
           <motion.span
             key={i}
             className="aspect-[3/4] rounded-[3px] sm:rounded-md"
-            initial={false}
+            // A fixed starting state: the server can't know the reduced-motion preference, so
+            // deriving the first frame from it made server and client HTML disagree.
+            initial={START}
             animate={
               done
                 ? chosen
                   ? { backgroundColor: "var(--gold)", scale: 1.15, opacity: 1 }
                   : { backgroundColor: "var(--muted-foreground)", scale: 0.85, opacity: 0.18 }
-                : { backgroundColor: "var(--muted-foreground)", scale: 1, opacity: 0.45 }
+                : START
             }
-            transition={{ duration: 0.6, delay: reduce ? 0 : chosen ? 1.1 : (i % 10) * 0.03 + Math.floor(i / 10) * 0.04 }}
+            transition={reduce ? { duration: 0 } : { duration: 0.6, delay: chosen ? 1.1 : (i % 10) * 0.03 + Math.floor(i / 10) * 0.04 }}
           />
         );
       })}

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight, ClipboardCheck, Lightbulb } from "lucide-react";
-import { PageHero, Section, SectionHeading } from "@/components/site/section";
+import { HeroPanel, PageHero, Section, SectionHeading } from "@/components/site/section";
 import { buttonVariants } from "@/components/ui/button";
 import { VERTICALS } from "@/lib/content";
 import { SECTOR_BY_CODE } from "@/lib/taxonomy";
@@ -24,7 +24,25 @@ export default async function SectorPage({ params }: { params: Promise<{ slug: s
 
   return (
     <>
-      <PageHero eyebrow={v.launch ? "Launch vertical" : "Growing talent pool"} title={`${v.name} talent`} lead={v.blurb}>
+      <PageHero
+        eyebrow={v.launch ? "Launch vertical" : "Growing talent pool"}
+        title={`${v.name} talent`}
+        lead={v.blurb}
+        aside={
+          <HeroPanel title="Candidates are assessed on">
+            <ul className="flex flex-wrap gap-2">
+              {v.assessment.map((a) => (
+                <li key={a} className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3.5 py-1.5 text-sm font-medium text-secondary-foreground">
+                  <ClipboardCheck className="size-3.5 text-primary" aria-hidden /> {a}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-5 border-t pt-4 text-sm text-muted-foreground">
+              {v.roles.length} role types in this pool. The full list is below.
+            </p>
+          </HeroPanel>
+        }
+      >
         <div className="flex flex-col gap-3 sm:flex-row">
           <Link href="/employers#request" className={buttonVariants({ size: "lg" })}>
             Request {v.name.toLowerCase()} talent <ArrowRight />

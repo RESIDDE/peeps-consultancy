@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { ArrowRight, Check } from "lucide-react";
-import { PageHero, Section, SectionHeading } from "@/components/site/section";
+import { ArrowRight, Check, GraduationCap, Handshake, Users } from "lucide-react";
+import { HeroFacts, PageHero, Section, SectionHeading } from "@/components/site/section";
 import { EnquiryForm } from "@/components/site/forms";
 
 export const metadata: Metadata = {
@@ -25,6 +25,15 @@ export default function AcademyPage() {
           </>
         }
         lead="PEEPs Academy turns training into employment. Talent Ready programmes prepare candidates for work, and employer-sponsored training builds pipelines to your specification."
+        aside={
+          <HeroFacts
+            items={[
+              { icon: GraduationCap, value: `${TALENT_READY.length} Talent Ready programmes`, label: TALENT_READY.map((p) => p.name.replace("Talent Ready: ", "")).join(", ") },
+              { icon: Handshake, value: "Employer-sponsored", label: "Graduates join with no debt to repay" },
+              { icon: Users, value: "A PEEPs talent pool", label: "Where graduates go after their programme" },
+            ]}
+          />
+        }
       />
 
       <Section>

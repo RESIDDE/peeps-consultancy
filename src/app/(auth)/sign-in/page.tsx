@@ -48,12 +48,11 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
       {process.env.NODE_ENV !== "production" && (
         <div className="mt-6 rounded-2xl border border-dashed p-4 text-xs text-muted-foreground">
           <p className="font-semibold text-foreground">Demo accounts (development only)</p>
-          <p className="mt-1">
-            admin@peeps.local · recruiter@peeps.local · employer@peeps.local · candidate@peeps.local
-          </p>
+          <p className="mt-1">employer@peeps.local · candidate@peeps.local</p>
           <p>
             Password: <code className="font-mono">peeps-demo-2026</code>
           </p>
+          <p className="mt-1">Staff accounts sign in to the admin console (npm run dev:admin, port 3001).</p>
         </div>
       )}
     </div>

@@ -70,3 +70,11 @@ export function humanize(value: string | null | undefined): string {
 export function isPast(d: Date | number | string | null | undefined): boolean {
   return d != null && new Date(d).getTime() < Date.now();
 }
+
+const NUMBER_WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
+
+/** "four" for 4, for counts used in prose; larger numbers stay as digits. Pass `capital` at the start of a sentence. */
+export function numberWord(n: number, capital = false): string {
+  const word = NUMBER_WORDS[n] ?? String(n);
+  return capital ? word.charAt(0).toUpperCase() + word.slice(1) : word;
+}

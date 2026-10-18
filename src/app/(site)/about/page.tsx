@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
-import { PageHero, Section, SectionHeading } from "@/components/site/section";
-import { COMPANY, ROADMAP, VALUES } from "@/lib/content";
+import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
+import { HeroPanel, PageHero, Section, SectionHeading } from "@/components/site/section";
+import { Lifecycle } from "@/components/site/lifecycle";
+import { numberWord } from "@/lib/format";
+import { COMPANY, DIVISIONS, ROADMAP, VALUES } from "@/lib/content";
 
 export const metadata: Metadata = { title: "About", description: "Vision, mission, values and roadmap of PEEPs.HR Partners." };
 
@@ -15,6 +19,23 @@ export default function AboutPage() {
           </>
         }
         lead={COMPANY.positioning}
+        aside={
+          <HeroPanel title={`One partner, ${numberWord(DIVISIONS.length)} divisions`}>
+            <ul className="-mx-3 grid">
+              {DIVISIONS.map((d) => (
+                <li key={d.slug}>
+                  <Link href={`/services/${d.slug}`} className="group flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-muted">
+                    <span className="min-w-0">
+                      <span className="block font-medium">{d.name}</span>
+                      <span className="block truncate text-sm text-muted-foreground">{d.kicker}</span>
+                    </span>
+                    <ArrowUpRight className="size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" aria-hidden />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </HeroPanel>
+        }
       />
 
       <Section>
@@ -53,6 +74,18 @@ export default function AboutPage() {
               the two and holds it to a standard.
             </p>
           </div>
+        </div>
+      </Section>
+
+      <Section tone="ink">
+        <SectionHeading
+          onDark
+          eyebrow="The PEEPs model"
+          title="Train → Assess → Prepare → Match → Deploy → Develop"
+          lead="This isn't a recruitment agency bolted onto a database. It's a single loop that develops talent, proves it, places it, and uses employer feedback to improve the next cohort."
+        />
+        <div className="mt-14">
+          <Lifecycle />
         </div>
       </Section>
 

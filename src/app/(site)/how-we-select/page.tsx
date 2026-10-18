@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import { Check, X } from "lucide-react";
-import { PageHero, Section, SectionHeading } from "@/components/site/section";
+import { ChartColumnIncreasing, Check, ListChecks, ShieldCheck, X } from "lucide-react";
+import { HeroFacts, PageHero, Section, SectionHeading } from "@/components/site/section";
 import { QualityLadder } from "@/components/site/quality-ladder";
 import { CLASSIFICATIONS, ASSESSMENT_TEMPLATES, INTERVIEW_TEMPLATE } from "@/lib/taxonomy";
 import { QUALITY_FRAMEWORK, SELECTION_STEPS } from "@/lib/content";
+import { CHECK_META, STAGES } from "@/lib/quality";
 
 export const metadata: Metadata = {
   title: "How PEEPs Selects Talent",
@@ -23,6 +24,15 @@ export default function HowWeSelectPage() {
           </>
         }
         lead="We publish our process because trust has to be earned. Here is exactly what happens before a candidate's name reaches you, and what each PEEPs label means."
+        aside={
+          <HeroFacts
+            items={[
+              { icon: ListChecks, value: `${SELECTION_STEPS.length} steps`, label: "From registration to recommendation" },
+              { icon: ShieldCheck, value: `${Object.keys(CHECK_META).length} checks`, label: "Verification checks recorded per candidate" },
+              { icon: ChartColumnIncreasing, value: `${STAGES.length} stages`, label: "Each one unlocked only by recorded evidence" },
+            ]}
+          />
+        }
       />
 
       <Section>

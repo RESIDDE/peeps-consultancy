@@ -1,43 +1,31 @@
 import { cn } from "@/lib/utils";
 
 /**
- * The PEEPs mark: three people-dots on an arc — Talent, PEEPs, Employer —
- * with PEEPs (gold) as the bridge between them.
+ * The PEEPs wordmark, painted with `currentColor` through a mask rather than swapped
+ * between a black file and a white one.
+ *
+ * The swap keyed off the theme, which is only one of the things that decides whether the
+ * surface under the mark is light or dark. X-ray inverts the page without touching the
+ * theme class, and the footer, console sidebar and auth panel are dark in either theme —
+ * so a theme-keyed swap shows a black mark on a black ground in several real cases.
+ * Taking the colour from the text colour is right in all of them, and halves the bytes.
  */
-export function LogoMark({ className, title = "PEEPs" }: { className?: string; title?: string }) {
+export function Logo({
+  className,
+  compact = false,
+  tone = "auto",
+}: {
+  className?: string;
+  /** Slightly smaller, for tight chrome. */
+  compact?: boolean;
+  /** `onDark` pins it white for a surface that sets no text colour of its own. */
+  tone?: "auto" | "onDark";
+}) {
   return (
-    <svg viewBox="0 0 40 40" className={cn("size-8", className)} role="img" aria-label={title}>
-      <rect width="40" height="40" rx="11" fill="var(--ink)" className="dark:fill-[var(--primary)]" />
-      <path
-        d="M10 26.5 Q20 8 30 26.5"
-        fill="none"
-        stroke="var(--primary)"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        className="dark:stroke-[var(--ink)]"
-        opacity="0.9"
-      />
-      <circle cx="10" cy="26.5" r="4" fill="#f4f1ea" />
-      <circle cx="30" cy="26.5" r="4" fill="#f4f1ea" />
-      <circle cx="20" cy="16.5" r="5" fill="var(--gold)" />
-    </svg>
-  );
-}
-
-export function Logo({ className, compact = false }: { className?: string; compact?: boolean }) {
-  return (
-    <span className={cn("inline-flex items-center gap-2.5", className)}>
-      <LogoMark />
-      <span className="flex flex-col leading-none">
-        <span className="font-display text-[1.35rem] font-semibold tracking-tight">
-          PEEP<span className="text-primary">s</span>
-        </span>
-        {!compact && (
-          <span className="mt-0.5 text-[0.6rem] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-            .HR Partners
-          </span>
-        )}
-      </span>
-    </span>
+    <span
+      role="img"
+      aria-label="PEEPs"
+      className={cn("peeps-wordmark", compact ? "h-5" : "h-6", tone === "onDark" && "text-white", className)}
+    />
   );
 }

@@ -1,0 +1,3 @@
+/* Same brand styles as the main site; also scan the shared components in ../src for classes. */
+@import "../../../src/app/globals.css";
+@source "../../../src";

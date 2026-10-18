@@ -18,8 +18,16 @@ function trustedOrigins(request?: Request): string[] {
   return extra;
 }
 
+/**
+ * The main site and the admin console share this config. The console sets
+ * AUTH_COOKIE_PREFIX so its session cookies don't collide with the site's
+ * (cookies on localhost are shared across ports).
+ */
+export const COOKIE_PREFIX = process.env.AUTH_COOKIE_PREFIX || "better-auth";
+
 export const auth = betterAuth({
   trustedOrigins,
+  advanced: { cookiePrefix: COOKIE_PREFIX },
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: {

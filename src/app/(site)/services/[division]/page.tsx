@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight, Check } from "lucide-react";
-import { PageHero, Section, SectionHeading } from "@/components/site/section";
+import { HeroPanel, PageHero, Section, SectionHeading } from "@/components/site/section";
 import { EnquiryForm } from "@/components/site/forms";
 import { buttonVariants } from "@/components/ui/button";
 import { DIVISIONS } from "@/lib/content";
@@ -28,7 +28,23 @@ export default async function DivisionPage({ params }: { params: Promise<{ divis
 
   return (
     <>
-      <PageHero eyebrow={d.kicker} title={d.name} lead={d.summary}>
+      <PageHero
+        eyebrow={d.kicker}
+        title={d.name}
+        lead={d.summary}
+        aside={
+          <HeroPanel title="What's included">
+            <ol className="grid gap-3">
+              {d.services.map((s, i) => (
+                <li key={s.title} className="flex items-baseline gap-3">
+                  <span className="font-mono text-xs text-primary">{String(i + 1).padStart(2, "0")}</span>
+                  <span className="font-medium">{s.title}</span>
+                </li>
+              ))}
+            </ol>
+          </HeroPanel>
+        }
+      >
         <p className="font-display max-w-2xl text-2xl italic text-primary">&ldquo;{d.lead}&rdquo;</p>
       </PageHero>
 

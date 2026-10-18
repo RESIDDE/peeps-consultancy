@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
-import { PageHero, Section } from "@/components/site/section";
+import { HeroPanel, PageHero, Section } from "@/components/site/section";
 import { Badge } from "@/components/ui/badge";
 import { VERTICALS } from "@/lib/content";
 
@@ -14,6 +14,27 @@ export default function SectorsPage() {
         eyebrow="Sectors"
         title="Deep talent pools, not a catch-all database."
         lead="Each vertical has its own talent pool, its own assessment criteria and its own partner network."
+        aside={
+          <HeroPanel title="Talent pools">
+            {[
+              { label: "Launch verticals", items: VERTICALS.filter((v) => v.launch) },
+              { label: "Growing pools", items: VERTICALS.filter((v) => !v.launch) },
+            ].map((group) => (
+              <div key={group.label} className="mb-5 last:mb-0">
+                <p className="text-sm text-muted-foreground">{group.label}</p>
+                <ul className="mt-2 flex flex-wrap gap-2">
+                  {group.items.map((v) => (
+                    <li key={v.slug}>
+                      <Link href={`/sectors/${v.slug}`} className="inline-flex min-h-9 items-center rounded-full border bg-background px-3.5 text-sm font-medium transition-colors hover:border-primary hover:text-primary">
+                        {v.name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </HeroPanel>
+        }
       />
       <Section>
         <div className="grid gap-4 lg:grid-cols-2">

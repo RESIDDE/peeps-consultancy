@@ -1,266 +1,188 @@
 import Link from "next/link";
-import {
-  ArrowRight,
-  ArrowUpRight,
-  Briefcase,
-  Calculator,
-  Check,
-  GraduationCap,
-  Users,
-} from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
-import { Section, SectionHeading } from "@/components/site/section";
-import { Reveal } from "@/components/site/reveal";
-import { TalentProfileCard } from "@/components/site/talent-profile-card";
-import { Lifecycle } from "@/components/site/lifecycle";
-import { QualityLadder } from "@/components/site/quality-ladder";
-import { CvFunnel } from "@/components/site/cv-funnel";
-import { BridgeDiagram } from "@/components/site/bridge-diagram";
-import { Faq } from "@/components/site/faq";
-import { DIVISIONS, FAQS, VERTICALS } from "@/lib/content";
-import { cn } from "@/lib/utils";
+import { ArrowUpRight } from "lucide-react";
+import { TheVetting } from "@/components/site/the-vetting";
+import { StudioHero } from "@/components/site/studio/hero";
+import { ShortlistFolders } from "@/components/site/studio/shortlist-folders";
+import { COMPANY, DIVISIONS, VERTICALS } from "@/lib/content";
+import { CHECK_META, STAGES } from "@/lib/quality";
 
-const DIVISION_ICONS = { talent: Users, academy: GraduationCap, professional: Calculator, workforce: Briefcase } as const;
+/** Three promises the site already makes elsewhere; nothing here is a new claim. */
+const PILLARS = [
+  {
+    title: "Published methodology",
+    body: "Our selection process is public, step by step. You can read exactly what each stage requires before you hire a single person through us.",
+  },
+  {
+    title: "Evidence on every shortlist",
+    body: "Each candidate arrives with an assessment report. Identity, qualifications, history and readiness are recorded, not asserted.",
+  },
+  {
+    title: "Free for candidates",
+    body: "Employers pay for recruitment. Candidates never pay placement fees, which is why the registry attracts people who would not pay to be seen.",
+  },
+];
 
 export default function HomePage() {
+  const launch = VERTICALS.filter((v) => v.launch);
+
   return (
     <>
+      {/* ---------------- Meta banner ---------------- */}
+      <Link
+        href="/register/candidate"
+        className="label flex items-center justify-center gap-2 border-b border-border py-2 text-center hover:text-foreground"
+      >
+        <span className="lime-gradient-text font-medium">New</span>
+        <span className="text-muted-foreground">
+          The PEEPs Talent Registry is live. Join free and get verified.
+        </span>
+      </Link>
+
       {/* ---------------- Hero ---------------- */}
-      <section className="grain relative overflow-hidden">
-        <div className="dotgrid absolute inset-0 -z-10 opacity-50 [mask-image:radial-gradient(ellipse_at_70%_20%,black,transparent_65%)]" />
-        <div className="container-page grid gap-16 pb-20 pt-12 sm:pt-20 lg:grid-cols-[1.15fr_1fr] lg:items-center lg:gap-12 lg:pb-28">
+      <StudioHero />
+
+      {/* ---------------- Sector folders ---------------- */}
+      <ShortlistFolders />
+
+      {/* ---------------- Statement ---------------- */}
+      <section data-chapter="The difference" className="shell hairline py-24 md:py-40">
+        <div className="grid gap-12 lg:grid-cols-[1.2fr_1fr] lg:gap-20">
+          <h2 className="headline max-w-[20ch]">
+            We help employers hire on evidence, not on CVs.
+          </h2>
           <div>
-            <p className="eyebrow">Talent · Academy · Professional · Workforce</p>
-            <h1 className="font-display mt-5 text-balance text-[2.6rem] font-medium leading-[1.02] sm:text-6xl lg:text-[4.4rem]">
-              Talent that has been identified, screened, assessed and{" "}
-              <em className="relative whitespace-nowrap font-normal italic text-primary">
-                prepared
-                <svg aria-hidden viewBox="0 0 200 12" className="absolute -bottom-1 left-0 h-3 w-full text-gold" preserveAspectRatio="none">
-                  <path d="M2 9 C 50 2, 150 2, 198 8" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
-                </svg>
-              </em>
-              .
-            </h1>
-            <p className="mt-7 max-w-xl text-pretty text-lg leading-relaxed text-muted-foreground sm:text-xl">
-              PEEPs.HR Partners gives Nigerian employers a short list of verified, assessed professionals, with the evidence behind
-              each one, instead of a pile of unsorted CVs.
-            </p>
-            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-              <Link href="/employers#request" className={buttonVariants({ size: "lg" })}>
-                Request talent <ArrowRight />
-              </Link>
-              <Link href="/register/candidate" className={buttonVariants({ size: "lg", variant: "outline" })}>
-                Join the talent registry
-              </Link>
-            </div>
-            <ul className="mt-10 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
-              {["Evidence-based shortlists", "Sector-specific assessments", "Candidates never pay placement fees"].map((t) => (
-                <li key={t} className="inline-flex items-center gap-1.5">
-                  <Check className="size-4 text-primary" /> {t}
-                </li>
-              ))}
-            </ul>
+            <p className="lede">{COMPANY.positioning}</p>
+            <Link href="/about" className="chars mt-8 inline-flex items-center gap-2">
+              Learn more <ArrowUpRight className="size-4" aria-hidden />
+            </Link>
           </div>
-          <TalentProfileCard className="mx-auto w-full max-w-md lg:ml-auto" />
+        </div>
+
+        <dl className="mt-20 grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-3">
+          {[
+            [String(STAGES.length), "evidence-gated quality stages"],
+            [String(Object.keys(CHECK_META).length), "verification checks per candidate"],
+            ["~5", "candidates per shortlist, not 100"],
+          ].map(([value, label]) => (
+            <div key={label} className="bg-background p-8">
+              <dd className="display text-primary" style={{ fontSize: "clamp(2.5rem,5vw,4rem)" }}>
+                {value}
+              </dd>
+              <dt className="label mt-3">{label}</dt>
+            </div>
+          ))}
+        </dl>
+      </section>
+
+      {/* ---------------- Big statement ---------------- */}
+      <section className="xxdark-gradient shell py-28 md:py-44">
+        <h2 className="display max-w-[16ch]">
+          A new kind of shortlist, built on <span className="text-primary">recorded evidence</span>.
+        </h2>
+      </section>
+
+      {/* ---------------- Pillars ---------------- */}
+      <section data-chapter="How it works" className="shell py-24 md:py-40">
+        <div className="grid gap-12 md:grid-cols-3 md:gap-10">
+          {PILLARS.map((p, i) => (
+            <div key={p.title} className="hairline pt-6">
+              <p className="label">[ {String(i + 1).padStart(2, "0")} ]</p>
+              <h3 className="subhead mt-6">{p.title}</h3>
+              <p className="lede mt-4">{p.body}</p>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* ---------------- Proposition: 100 → 5 ---------------- */}
-      <Section tone="muted">
-        <div className="grid gap-14 lg:grid-cols-2 lg:items-center">
-          <Reveal>
-            <SectionHeading
-              eyebrow="The PEEPs difference"
-              title={
-                <>
-                  A job board gives you volume. <span className="text-primary">PEEPs gives you a decision.</span>
-                </>
-              }
-              lead="Job boards hold millions of CVs and leave the screening to you. We do the identifying, screening, verifying and assessing first. Your shortlist is about five people, and each one comes with a report that explains why."
-            />
-            <dl className="mt-10 grid grid-cols-3 gap-4 border-t pt-8">
-              {[
-                ["7", "evidence-gated quality stages"],
-                ["9", "verification checks per candidate"],
-                ["~5", "candidates per shortlist"],
-              ].map(([n, l]) => (
-                <div key={l}>
-                  <dt className="font-display text-4xl font-medium text-primary sm:text-5xl">{n}</dt>
-                  <dd className="mt-1 text-sm text-muted-foreground">{l}</dd>
-                </div>
-              ))}
-            </dl>
-          </Reveal>
-          <Reveal delay={0.1} className="rounded-3xl border bg-card p-6 shadow-sm sm:p-8">
-            <div className="mb-5 flex items-center justify-between text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              <span>100 applications</span>
-              <span className="text-[color-mix(in_oklab,var(--gold)_60%,var(--foreground))]">5 evidenced candidates</span>
+      {/* ---------------- The vetting: pinned scroll sequence ---------------- */}
+      <TheVetting />
+
+      {/* ---------------- Divisions, as the reference's service blocks ---------------- */}
+      <section data-chapter="What we do" className="shell py-24 md:py-40">
+        {DIVISIONS.map((d, i) => (
+          <div
+            key={d.slug}
+            className="hairline grid gap-10 py-16 md:grid-cols-[1fr_1.1fr] md:gap-16 md:py-24"
+          >
+            <div>
+              <p className="label">[ {d.kicker} ]</p>
+              <h3 className="headline mt-6 max-w-[14ch]">{d.summary}</h3>
             </div>
-            <CvFunnel />
-          </Reveal>
-        </div>
-      </Section>
-
-      {/* ---------------- Lifecycle ---------------- */}
-      <Section tone="ink">
-        <SectionHeading
-          onDark
-          eyebrow="The PEEPs model"
-          title="Train → Assess → Prepare → Match → Deploy → Develop"
-          lead="This isn't a recruitment agency bolted onto a database. It's a single loop that develops talent, proves it, places it, and uses employer feedback to improve the next cohort."
-        />
-        <div className="mt-14">
-          <Lifecycle />
-        </div>
-      </Section>
-
-      {/* ---------------- Quality ladder ---------------- */}
-      <Section>
-        <div className="mb-14 flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
-          <SectionHeading
-            eyebrow="PEEPs Quality & Credibility Framework"
-            title="Every badge has a record behind it."
-            lead="Candidates move up the ladder only when the evidence is recorded. Here is exactly what each stage requires."
-          />
-          <Link href="/how-we-select" className={cn(buttonVariants({ variant: "outline" }), "self-start lg:self-auto")}>
-            Read our methodology <ArrowUpRight />
-          </Link>
-        </div>
-        <QualityLadder />
-      </Section>
-
-      {/* ---------------- Divisions ---------------- */}
-      <Section tone="muted">
-        <SectionHeading
-          eyebrow="One partner, four divisions"
-          title="Recruitment, training, professional services and workforce, all connected."
-          lead="A recruitment client today might be a training client next quarter and an advisory client next year. Each division strengthens the others."
-        />
-        <div className="mt-14 grid gap-4 sm:grid-cols-2">
-          {DIVISIONS.map((d, i) => {
-            const Icon = DIVISION_ICONS[d.slug];
-            return (
-              <Reveal key={d.slug} delay={i * 0.06}>
-                <Link
-                  href={`/services/${d.slug}`}
-                  className="group flex h-full flex-col rounded-3xl border bg-card p-7 transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg sm:p-8"
-                >
-                  <div className="flex items-start justify-between">
-                    <span className="inline-flex size-12 items-center justify-center rounded-2xl bg-secondary text-primary">
-                      <Icon className="size-6" />
-                    </span>
-                    <ArrowUpRight className="size-5 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary" />
-                  </div>
-                  <p className="mt-8 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">{d.kicker}</p>
-                  <h3 className="font-display mt-1 text-2xl font-medium sm:text-3xl">{d.name}</h3>
-                  <p className="mt-3 leading-relaxed text-muted-foreground">{d.summary}</p>
-                </Link>
-              </Reveal>
-            );
-          })}
-        </div>
-      </Section>
-
-      {/* ---------------- Verticals ---------------- */}
-      <Section>
-        <SectionHeading
-          eyebrow="Where we start"
-          title="Three launch verticals where we have a genuine advantage."
-          lead="Rather than recruit everyone for everyone, we go deep where our training ecosystem and business networks give us access and insight."
-        />
-        <div className="mt-14 grid gap-4 lg:grid-cols-3">
-          {VERTICALS.filter((v) => v.launch).map((v, i) => (
-            <Reveal key={v.slug} delay={i * 0.08}>
-              <Link
-                href={`/sectors/${v.slug}`}
-                className="group relative flex h-full flex-col overflow-hidden rounded-3xl border bg-card p-7"
-              >
-                <span className="font-mono text-xs text-muted-foreground">0{i + 1}</span>
-                <h3 className="font-display mt-4 text-2xl font-medium">{v.name}</h3>
-                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{v.blurb}</p>
-                <ul className="mt-6 flex flex-wrap gap-1.5">
-                  {v.roles.slice(0, 5).map((r) => (
-                    <li key={r} className="rounded-full bg-muted px-2.5 py-1 text-xs">
-                      {r}
+            <div className="flex flex-col justify-between gap-10">
+              <div>
+                <p className="label">{d.name}</p>
+                <ul className="mt-6 grid gap-px overflow-hidden border-y border-border bg-border">
+                  {d.services.map((s) => (
+                    <li key={s.title} className="bg-background py-4">
+                      <p className="font-medium">{s.title}</p>
+                      <p className="lede mt-1 text-sm">{s.body}</p>
                     </li>
                   ))}
                 </ul>
-                <span className="mt-auto inline-flex items-center gap-1 pt-8 text-sm font-medium text-primary">
-                  Explore the talent pool <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
-                </span>
+              </div>
+              <Link href={`/services/${d.slug}`} className="chars inline-flex items-center gap-2 self-start">
+                Learn more <ArrowUpRight className="size-4" aria-hidden />
               </Link>
-            </Reveal>
+            </div>
+            <span className="label md:col-span-2">
+              {String(i + 1).padStart(2, "0")} — {String(DIVISIONS.length).padStart(2, "0")}
+            </span>
+          </div>
+        ))}
+      </section>
+
+      {/* ---------------- Sectors, as the reference's bordered preview rows ---------------- */}
+      <section data-chapter="Sectors" className="py-24 md:py-40">
+        <div className="shell mb-12 flex items-end justify-between gap-8">
+          <h2 className="headline max-w-[16ch]">Where we go deep.</h2>
+          <Link href="/sectors" className="chars inline-flex shrink-0 items-center gap-2">
+            All sectors <ArrowUpRight className="size-4" aria-hidden />
+          </Link>
+        </div>
+        <div className="hairline">
+          {launch.map((v, i) => (
+            <Link
+              key={v.slug}
+              href={`/sectors/${v.slug}`}
+              className="row-item shell group flex items-center gap-6 py-8 md:gap-12"
+            >
+              <span className="label w-10 shrink-0">{String(i + 1).padStart(2, "0")}</span>
+              <span
+                className="min-w-0 flex-1 font-medium leading-none"
+                style={{ fontFamily: "var(--font-display)", fontSize: "clamp(1.75rem,3.5vw,3.5rem)" }}
+              >
+                {v.name}
+              </span>
+              <span className="label hidden max-w-[28ch] flex-1 md:block">{v.blurb}</span>
+              <ArrowUpRight
+                className="size-6 shrink-0 transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:text-primary"
+                aria-hidden
+              />
+            </Link>
           ))}
         </div>
-        <p className="mt-6 text-sm text-muted-foreground">
-          Also growing: <Link href="/sectors/technology" className="font-medium text-foreground underline-offset-4 hover:underline">Technology</Link> and{" "}
-          <Link href="/sectors/hospitality" className="font-medium text-foreground underline-offset-4 hover:underline">Hospitality</Link> talent pools through partner academies.
-        </p>
-      </Section>
+      </section>
 
-      {/* ---------------- Bridge ---------------- */}
-      <Section tone="ink">
-        <SectionHeading
-          onDark
-          eyebrow="The employment bridge"
-          title="We don't compete with training centres. We connect them to employers."
-          lead="Training centres develop professionals. PEEPs proves their readiness and connects them with employers, then uses what employers tell us to shape what gets taught next."
-        />
-        <div className="mt-14">
-          <BridgeDiagram />
-        </div>
-      </Section>
-
-      {/* ---------------- Pilot + split CTA ---------------- */}
-      <Section>
-        <div className="grid gap-4 lg:grid-cols-2">
-          <div className="grain relative overflow-hidden rounded-3xl bg-primary p-8 text-primary-foreground sm:p-10">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/70">For employers</p>
-            <h3 className="font-display mt-3 text-3xl font-medium sm:text-4xl">Start with a pilot recruitment engagement.</h3>
-            <p className="mt-4 max-w-md leading-relaxed text-white/80">
-              Give us one vacancy. We&apos;ll run the full PEEPs process: sourcing, screening, assessment, an evidence-based shortlist
-              and interview coordination. You decide whether it was worth it.
-            </p>
-            <ol className="mt-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-white/80">
-              {["Vacancy", "Sourced", "Screened", "Interviewed", "Shortlisted", "Hired"].map((s, i, a) => (
-                <li key={s} className="inline-flex items-center gap-2">
-                  {s}
-                  {i < a.length - 1 && <ArrowRight className="size-3.5 text-gold" />}
-                </li>
-              ))}
-            </ol>
-            <Link href="/employers#request" className={cn(buttonVariants({ variant: "gold", size: "lg" }), "mt-8")}>
-              Request a pilot <ArrowRight />
+      {/* ---------------- Closing ---------------- */}
+      <section data-chapter="Start" className="shell py-24 md:py-40">
+        <div className="rounded-lg border border-border p-10 md:p-20">
+          <p className="label">[ Start here ]</p>
+          <h2 className="headline mt-8 max-w-[18ch]">
+            Give us one vacancy. We will run the whole process and you decide if it was worth it.
+          </h2>
+          <div className="mt-12 flex flex-wrap items-center gap-x-8 gap-y-4">
+            <Link
+              href="/employers#request"
+              className="chars inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 font-medium text-primary-foreground"
+            >
+              Request talent <ArrowUpRight className="size-4" aria-hidden />
             </Link>
-          </div>
-          <div className="rounded-3xl border bg-card p-8 sm:p-10">
-            <p className="eyebrow">For professionals</p>
-            <h3 className="font-display mt-3 text-3xl font-medium sm:text-4xl">Get assessed. Get prepared. Get seen by serious employers.</h3>
-            <p className="mt-4 max-w-md leading-relaxed text-muted-foreground">
-              Join the PEEPs Talent Registry free of charge. Move up the quality ladder, and get put forward for roles that match your
-              skills, experience and salary expectations.
-            </p>
-            <ul className="mt-6 grid gap-2 text-sm">
-              {["No placement fees for candidates, ever", "Honest CV feedback and interview preparation", "Track your verification progress online"].map((t) => (
-                <li key={t} className="flex items-center gap-2">
-                  <Check className="size-4 text-primary" /> {t}
-                </li>
-              ))}
-            </ul>
-            <Link href="/register/candidate" className={cn(buttonVariants({ size: "lg" }), "mt-8")}>
-              Register your profile <ArrowRight />
+            <Link href="/register/candidate" className="chars inline-flex items-center gap-2">
+              Join the registry <ArrowUpRight className="size-4" aria-hidden />
             </Link>
           </div>
         </div>
-      </Section>
-
-      {/* ---------------- FAQ ---------------- */}
-      <Section tone="muted">
-        <div className="grid gap-12 lg:grid-cols-[1fr_1.6fr]">
-          <SectionHeading eyebrow="Questions" title="What employers and candidates ask us." />
-          <Faq items={FAQS} />
-        </div>
-      </Section>
+      </section>
     </>
   );
 }
