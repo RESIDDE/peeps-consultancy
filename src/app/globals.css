@@ -459,6 +459,21 @@
   will-change: transform;
 }
 
+/* The clear well in the drawn glass: no fill of its own, so only what is magnified shows. */
+.studio .glass-well {
+  position: absolute;
+  z-index: 1;
+  border-radius: 9999px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.studio .glass-well > * {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+}
+
 /* ---- the instrument face -------------------------------------------------- */
 /* A measuring grid over the magnified copy, in the inverted ink so it reads either way. */
 .studio .lens-grid {

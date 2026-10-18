@@ -13,23 +13,28 @@ import {
 } from "motion/react";
 import { LensFace } from "@/components/motion/lens-face";
 import { takeSnapshot } from "@/components/motion/page-snapshot";
+import { useMotionEnv } from "@/components/motion/use-motion-env";
 import { CX, CY, R_GLASS, VIEW, Magnifier } from "./magnifier";
 
-/** Width the glass settles at once it is lifted off the page. */
-const SIZE = 380;
 const ZOOM = 2.1;
+
+/** Width the glass settles at once lifted. A 380px object swamps a phone. */
+const SIZE_WIDE = 380;
+const SIZE_NARROW = 240;
 
 // Rounded before it reaches the DOM. Division is deterministic across engines so this is
 // not the hydration hazard the bezel trig was, but inline styles should not carry 15 digits.
-const k = SIZE / VIEW;
 const place = (n: number) => Math.round(n * 100) / 100;
-const GLASS_X = place(CX * k);
-const GLASS_Y = place(CY * k);
-const GLASS_R = place(R_GLASS * k);
-// Rounding the parts then subtracting reintroduces the error, so round the result too.
-const WELL_LEFT = place(GLASS_X - GLASS_R);
-const WELL_TOP = place(GLASS_Y - GLASS_R);
-const WELL_SIZE = place(GLASS_R * 2);
+
+/** Where the drawn glass's lens sits, for whatever width the object is rendered at. */
+function geometry(size: number) {
+  const k = size / VIEW;
+  const x = place(CX * k);
+  const y = place(CY * k);
+  const r = place(R_GLASS * k);
+  // Rounding the parts then subtracting reintroduces the error, so round the result too.
+  return { size, x, y, r, wellLeft: place(x - r), wellTop: place(y - r), wellSize: place(r * 2) };
+}
 
 /**
  * The glass as a physical object: press it, carry it anywhere, and the page magnifies
@@ -45,6 +50,8 @@ export function DraggableGlass({ children }: { children: React.ReactNode }) {
   const host = useRef<HTMLDivElement>(null);
   const [held, setHeld] = useState(false);
   const controls = useDragControls();
+  const { wide } = useMotionEnv();
+  const g = geometry(wide ? SIZE_WIDE : SIZE_NARROW);
 
   const { scrollX, scrollY } = useScroll();
   const x = useMotionValue(0);
@@ -57,22 +64,22 @@ export function DraggableGlass({ children }: { children: React.ReactNode }) {
   });
 
   // The magnified view is anchored to the glass itself, not to the pointer.
-  const offsetX = useTransform(() => -(x.get() + GLASS_X + scrollX.get()));
-  const offsetY = useTransform(() => -(y.get() + GLASS_Y + scrollY.get()));
-  const inner = useMotionTemplate`translate(${GLASS_R}px, ${GLASS_R}px) scale(${ZOOM}) translate(${offsetX}px, ${offsetY}px)`;
+  const offsetX = useTransform(() => -(x.get() + g.x + scrollX.get()));
+  const offsetY = useTransform(() => -(y.get() + g.y + scrollY.get()));
+  const inner = useMotionTemplate`translate(${g.r}px, ${g.r}px) scale(${ZOOM}) translate(${offsetX}px, ${offsetY}px)`;
 
   const lift = useCallback(
     (event: React.PointerEvent) => {
       const r = anchor.current?.getBoundingClientRect();
       if (!r) return;
       // Start life exactly where the hero copy stood, centred on the same glass.
-      x.set(r.left + (r.width * CX) / VIEW - GLASS_X);
-      y.set(r.top + (r.height * CY) / VIEW - GLASS_Y);
+      x.set(r.left + (r.width * CX) / VIEW - g.x);
+      y.set(r.top + (r.height * CY) / VIEW - g.y);
       takeSnapshot(host.current);
       setHeld(true);
       controls.start(event);
     },
-    [x, y, controls],
+    [x, y, controls, g.x, g.y],
   );
 
   // A snapshot goes stale when the page moves beneath it.
@@ -103,10 +110,11 @@ export function DraggableGlass({ children }: { children: React.ReactNode }) {
       <div
         ref={anchor}
         data-no-lens
-        className="cursor-grab transition-opacity duration-200"
+        data-lens-omit
+        className="cursor-grab touch-none transition-opacity duration-200"
         style={{ opacity: held ? 0 : 1 }}
         onPointerDown={(e) => {
-          if (e.pointerType !== "mouse" || e.button !== 0 || held) return;
+          if (e.button !== 0 || held) return;
           e.preventDefault();
           lift(e);
         }}
@@ -129,7 +137,7 @@ export function DraggableGlass({ children }: { children: React.ReactNode }) {
           x,
           y,
           rotate: tilt,
-          width: SIZE,
+          width: g.size,
           position: "fixed",
           left: 0,
           top: 0,
@@ -145,11 +153,11 @@ export function DraggableGlass({ children }: { children: React.ReactNode }) {
         <div
           aria-hidden
           className="lens-well"
-          style={{ left: WELL_LEFT, top: WELL_TOP, width: WELL_SIZE, height: WELL_SIZE }}
+          style={{ left: g.wellLeft, top: g.wellTop, width: g.wellSize, height: g.wellSize }}
         >
           <motion.div ref={host} className="lens-inner" style={{ transform: inner }} />
           {/* No rim graduations here: the drawn bezel already carries its own. */}
-          <LensFace x={x} y={y} radius={GLASS_R} ticks={false} />
+          <LensFace x={x} y={y} radius={g.r} ticks={false} />
           <span className="lens-glare" />
         </div>
         <Magnifier />

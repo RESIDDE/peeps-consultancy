@@ -22,7 +22,7 @@ const R_OUTER = 182;
  * there is no artwork in this project. Everything is vector, so it stays crisp at any size
  * and costs one request.
  */
-export function Magnifier({ className }: { className?: string }) {
+export function Magnifier({ className, children }: { className?: string; children?: React.ReactNode }) {
   return (
     <div className={cn("relative", className)}>
       <svg viewBox="0 0 620 620" className="h-auto w-full" role="img" aria-label="A magnifying glass, inviting you to pick it up">
@@ -136,6 +136,22 @@ export function Magnifier({ className }: { className?: string }) {
         />
       </svg>
 
+      {/* Whatever is shown through the lens. Positioned in percentages so it stays locked to
+          the glass at any rendered size, and clipped to the glass circle. */}
+      {children ? (
+        <div
+          className="glass-well"
+          style={{
+            left: `${place(((CX - R_GLASS) / VIEW) * 100)}%`,
+            top: `${place(((CY - R_GLASS) / VIEW) * 100)}%`,
+            width: `${place(((R_GLASS * 2) / VIEW) * 100)}%`,
+            height: `${place(((R_GLASS * 2) / VIEW) * 100)}%`,
+          }}
+        >
+          {children}
+        </div>
+      ) : null}
+
       {/* Set in HTML rather than SVG so it uses the display face and scales with the page */}
       <span
         aria-hidden
@@ -144,6 +160,7 @@ export function Magnifier({ className }: { className?: string }) {
           left: `${place((CX / VIEW) * 100)}%`,
           top: `${place(((CY - 34) / VIEW) * 100)}%`,
           transform: "translate(-50%, -100%)",
+          zIndex: 2,
           fontSize: "clamp(1rem, 2.1vw, 1.75rem)",
         }}
       >

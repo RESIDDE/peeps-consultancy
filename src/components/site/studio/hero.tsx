@@ -3,17 +3,29 @@
 import { useCallback, useEffect, useRef } from "react";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
-import { motion, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform } from "motion/react";
+import {
+  motion,
+  useMotionTemplate,
+  useMotionValue,
+  useReducedMotion,
+  useScroll,
+  useSpring,
+  useTransform,
+} from "motion/react";
 import { usePointer } from "@/components/motion/interaction-provider";
+import { takeSnapshot } from "@/components/motion/page-snapshot";
 import { useMotionEnv } from "@/components/motion/use-motion-env";
 import { DraggableGlass } from "./glass";
-import { Magnifier } from "./magnifier";
+import { CX, CY, R_GLASS, VIEW, Magnifier } from "./magnifier";
 
 /** How large the glass grows by the time it reaches the middle of the screen. */
 const ZOOM = 3.2;
 /** Degrees of lean at the far edge of the window. */
 const TILT = 14;
 const TILT_Z = 4;
+/** Magnification through the glass. Held constant as the glass grows, so a bigger lens
+ *  simply takes in more of its surroundings rather than zooming further in. */
+const LENS = 1.9;
 
 const unit = (n: number) => Math.max(-1, Math.min(1, n));
 
@@ -35,6 +47,15 @@ export function StudioHero() {
   const halfW = useMotionValue(1);
   const halfH = useMotionValue(1);
 
+  // Rest geometry for the lens, in document coordinates: the glass centre, the element
+  // centre it is scaled about, and the glass radius in unscaled local pixels.
+  const lensHost = useRef<HTMLDivElement>(null);
+  const gX = useMotionValue(0);
+  const gY = useMotionValue(0);
+  const eX = useMotionValue(0);
+  const eY = useMotionValue(0);
+  const rLocal = useMotionValue(0);
+
   const measure = useCallback(() => {
     const el = slot.current;
     const host = section.current;
@@ -52,7 +73,13 @@ export function StudioHero() {
     cy.set(r.top + r.height / 2);
     halfW.set(window.innerWidth / 2);
     halfH.set(window.innerHeight / 2);
-  }, [dx, dy, cx, cy, halfW, halfH]);
+
+    gX.set(r.left + window.scrollX + (r.width * CX) / VIEW);
+    gY.set(r.top + window.scrollY + (r.height * CY) / VIEW);
+    eX.set(r.left + window.scrollX + r.width / 2);
+    eY.set(r.top + window.scrollY + r.height / 2);
+    rLocal.set((r.width * R_GLASS) / VIEW);
+  }, [dx, dy, cx, cy, halfW, halfH, gX, gY, eX, eY, rLocal]);
 
   useEffect(() => {
     measure();
@@ -110,6 +137,27 @@ export function StudioHero() {
 
   const still = reduced === true;
 
+  // Where the glass centre currently sits in the document. A translate, then a scale about
+  // the element centre: E + T + s(G - E). Derived from the same values that drive the
+  // transform, so the lens tracks exactly without reading layout on any frame.
+  const lensX = useTransform(() => -(eX.get() + x.get() + scale.get() * (gX.get() - eX.get())));
+  const lensY = useTransform(() => -(eY.get() + y.get() + scale.get() * (gY.get() - eY.get())));
+  // The well sits inside the scaled glass, so the copy is counter-scaled to hold the
+  // magnification steady on screen as the glass grows.
+  const lensZoom = useTransform(scale, (v) => LENS / Math.max(v, 0.001));
+  const lensInner = useMotionTemplate`translate(${rLocal}px, ${rLocal}px) scale(${lensZoom}) translate(${lensX}px, ${lensY}px)`;
+
+  // One copy, taken after mount. It is positioned in document space, so scrolling does not
+  // invalidate it; only a change of layout does.
+  useEffect(() => {
+    if (still) return;
+    const take = () => takeSnapshot(lensHost.current, { invert: false });
+    take();
+    window.addEventListener("resize", take);
+    return () => window.removeEventListener("resize", take);
+  }, [still]);
+
+
   return (
     <section
       ref={section}
@@ -132,7 +180,11 @@ export function StudioHero() {
             >
               <div ref={drift} data-idle="true" className="loupe-float" style={{ perspective: "1200px" }}>
                 <motion.div style={pointerExtras ? { rotateX, rotateY, rotateZ } : undefined}>
-                  <Magnifier />
+                  <Magnifier>
+                  {/* A clear lens: the page around the glass, magnified, with nothing
+                      painted behind it. */}
+                  {!still && <motion.div ref={lensHost} style={{ transform: lensInner }} />}
+                </Magnifier>
                 </motion.div>
               </div>
             </motion.div>

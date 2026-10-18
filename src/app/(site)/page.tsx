@@ -27,17 +27,6 @@ export default function HomePage() {
 
   return (
     <>
-      {/* ---------------- Meta banner ---------------- */}
-      <Link
-        href="/register/candidate"
-        className="label flex items-center justify-center gap-2 border-b border-border py-2 text-center hover:text-foreground"
-      >
-        <span className="lime-gradient-text font-medium">New</span>
-        <span className="text-muted-foreground">
-          The PEEPs Talent Registry is live. Join free and get verified.
-        </span>
-      </Link>
-
       {/* ---------------- Hero ---------------- */}
       <StudioHero />
 
