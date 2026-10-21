@@ -66,7 +66,7 @@ export interface HalftoneWordmarkFooterProps {
   fontWeight?: number
   /** Face for the small type. */
   monoFamily?: string
-  /** Root height. A definite length, never a percentage. */
+  /** The footer's least height. Taller content grows it rather than being cropped by it. */
   height?: string
   /** Extra root class names. */
   className?: string
@@ -143,11 +143,13 @@ export function hwfFitSize(measured: number, width: number) {
 const HWF_CSS = `
 .hwf-root {
   position: relative; width: 100%; overflow: hidden; isolation: isolate;
+  display: flex; flex-direction: column;
   background: var(--hwf-bg); color: var(--hwf-ink); -webkit-font-smoothing: antialiased;
 }
 .hwf-root canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; max-width: none; }
 .hwf-top {
-  position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1.25fr) repeat(3, minmax(0, 1fr));
+  position: relative; z-index: 1; flex: 0 0 auto;
+  display: grid; grid-template-columns: minmax(0, 1.25fr) repeat(3, minmax(0, 1fr));
   gap: 24px; padding: clamp(22px, 3.4vw, 40px) clamp(20px, 3.4vw, 44px) 0;
   font-family: var(--hwf-mono); font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; line-height: 1.75;
 }
@@ -164,10 +166,19 @@ const HWF_CSS = `
 .hwf-col a:hover, .hwf-up:hover { opacity: 1; background-size: 100% 1px; }
 .hwf-col a:focus-visible, .hwf-up:focus-visible { outline: 1px solid currentColor; outline-offset: 3px; opacity: 1; }
 .hwf-rule {
-  position: relative; z-index: 1; display: flex; justify-content: flex-end; align-items: center; gap: 16px;
+  position: relative; z-index: 1; flex: 0 0 auto; display: flex; justify-content: flex-end; align-items: center; gap: 16px;
   margin: clamp(18px, 2.6vw, 30px) clamp(20px, 3.4vw, 44px) 0; padding-top: 12px;
   border-top: 0.5px solid color-mix(in srgb, var(--hwf-ink) 16%, transparent);
   font-family: var(--hwf-mono); font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase;
+}
+/* Reserves the band the wordmark prints in, so no line of type can come down onto the
+   dots. It also takes up whatever is left over, which is what holds the links at the top
+   of a tall footer. --hwf-band is measured off the set word in layout(); the fallback has
+   only to survive the first paint. */
+.hwf-band {
+  flex: 1 0 auto;
+  min-height: calc(var(--hwf-band, 18vw) + clamp(16px, 4vw, 32px));
+  pointer-events: none;
 }
 .hwf-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 @media (max-width: 720px) {
@@ -233,6 +244,7 @@ export default function HalftoneWordmarkFooter({
     let dots = new Float32Array(0)
     let count = 0
     let grainTile = null as HTMLCanvasElement | null
+    let lastBand = -1
     const ink = hwfHex(opts.current.colors.ink) || [233, 228, 218]
     const warm = hwfHex(opts.current.colors.warm) || [233, 118, 43]
 
@@ -259,6 +271,17 @@ export default function HalftoneWordmarkFooter({
       const box = m.measureText(word)
       const cap = box.actualBoundingBoxAscent || fit * 0.72
       const c = Math.max(0, Math.min(0.6, o.crop))
+
+      // How far the word reaches up from the bottom edge, handed back to CSS so the spacer
+      // under the links reserves exactly that. Written only on a change: the value follows
+      // the width alone, and writing it back unchanged would churn the ResizeObserver that
+      // called us here.
+      const band = Math.round(cap * (1 - c))
+      if (band !== lastBand) {
+        lastBand = band
+        root.style.setProperty("--hwf-band", band + "px")
+      }
+
       m.fillStyle = "#000"
       m.textBaseline = "alphabetic"
       m.fillText(word, (w - box.width) / 2, h + cap * c)
@@ -464,7 +487,7 @@ export default function HalftoneWordmarkFooter({
       className={"hwf-root " + className}
       style={
         {
-          height,
+          minHeight: height,
           "--hwf-bg": colors.background,
           "--hwf-ink": colors.ink,
           "--hwf-mono": monoFamily,
@@ -499,6 +522,7 @@ export default function HalftoneWordmarkFooter({
           </button>
         ) : null}
       </div>
+      <div className="hwf-band" aria-hidden="true" />
     </footer>
   )
 }
