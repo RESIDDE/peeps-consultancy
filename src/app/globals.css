@@ -301,6 +301,40 @@
   display: flex;
 }
 
+/* ---- graduated rules ------------------------------------------------------- */
+.studio .scale-rule {
+  /* How far either side of the bulge a tick still feels it, in pixels. */
+  --reach: 260;
+}
+/* The defaults live in the var() calls below, not as declarations here. Declaring
+   --bulge on this element would beat the value inherited from the wrapper that drives
+   it, and the swell would sit at zero forever. */
+.studio .scale-rule > div {
+  --d: max(calc(var(--i) - var(--bulge-at, 400)), calc(var(--bulge-at, 400) - var(--i)));
+  --f: max(0, calc(1 - var(--d) / var(--reach)));
+}
+.studio .scale-tick {
+  position: absolute;
+  top: 0;
+  display: block;
+  height: 1px;
+  width: calc((var(--w) + 34 * var(--f) * var(--bulge, 0)) * 1px);
+  background: var(--foreground);
+  opacity: calc(0.22 + 0.55 * var(--f) * var(--bulge, 0));
+  transition: none;
+}
+.studio .scale-label {
+  position: absolute;
+  top: 0;
+  left: 0.875rem;
+  transform: translateY(-50%);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  line-height: 1;
+  color: var(--foreground);
+  opacity: calc(0.3 + 0.55 * var(--f) * var(--bulge, 0));
+}
+
 /* ---- floating nav ---------------------------------------------------------- */
 .studio .studio-nav {
   position: fixed;

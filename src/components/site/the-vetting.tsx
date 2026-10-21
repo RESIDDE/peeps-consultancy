@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { ArrowDown, Check, CircleDot, Star } from "lucide-react";
 import type { MotionValue } from "motion/react";
-import { motion, useMotionValueEvent, useReducedMotion, useScroll, useTransform } from "motion/react";
+import { motion, useMotionTemplate, useMotionValueEvent, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { MotionNumber } from "@/components/motion/motion-number";
 import { useMotionEnv } from "@/components/motion/use-motion-env";
 import { crossFadeStops, fadeStops } from "@/lib/scroll-ranges";
@@ -43,6 +43,14 @@ export function TheVetting() {
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
   const pct = useTransform(scrollYProgress, (p) => Math.min(Math.max(p, 0), 1) * 100);
 
+  // The blur-focus treatment: everything resolves out of a blur as the scrub begins, and
+  // the card creeps forward across it, the way the reference hero handles its video.
+  const headIn = useTransform(scrollYProgress, [0, 0.05], [0, 1], { clamp: true });
+  const headBlur = useMotionTemplate`blur(${useTransform(headIn, (v) => (1 - v) * 8)}px)`;
+  const headY = useTransform(headIn, (v) => (1 - v) * -14);
+  const cardScale = useTransform(scrollYProgress, [0, 0.07, 1], [0.955, 1, 1.035]);
+  const barScale = useTransform(scrollYProgress, (v) => Math.min(1, Math.max(0, v)));
+
   const stepRef = useRef(0);
   const [step, setStep] = useState(0);
   useMotionValueEvent(scrollYProgress, "change", (p) => {
@@ -69,10 +77,13 @@ export function TheVetting() {
           <div className="container-page flex min-h-0 flex-1 flex-col pb-10 pt-8">
             {/* Chapter label and the progress counter, as in the reference */}
             <div className="flex items-start justify-between gap-6">
-              <div className="font-mono text-xs leading-relaxed text-muted-foreground">
+              <motion.div
+                style={{ opacity: headIn, filter: headBlur, y: headY }}
+                className="font-mono text-xs leading-relaxed text-muted-foreground"
+              >
                 <p id="vetting-title">The vetting</p>
                 <p className="text-foreground">From a CV to a shortlist.</p>
-              </div>
+              </motion.div>
               <div className="text-right">
                 <p className="font-mono text-xs text-muted-foreground">Evidence recorded</p>
                 <p aria-hidden className="font-mono text-5xl font-medium leading-none text-foreground/10 sm:text-7xl">
@@ -83,9 +94,12 @@ export function TheVetting() {
             </div>
 
             {/* The specimen card, gaining a layer per rung */}
-            <div className="flex min-h-0 flex-1 items-center justify-center py-6">
+            <motion.div
+              style={{ scale: cardScale }}
+              className="flex min-h-0 flex-1 items-center justify-center py-6"
+            >
               <SpecimenCard step={step} progress={scrollYProgress} />
-            </div>
+            </motion.div>
 
             {/* Which rung we are on */}
             <div className="flex items-end justify-between gap-6">
@@ -109,6 +123,14 @@ export function TheVetting() {
               </a>
             </div>
           </div>
+
+          {/* Fills as the sequence advances, so the scrub has a readable extent. */}
+          <div aria-hidden className="absolute inset-x-0 bottom-0 h-px bg-border">
+            <motion.div
+              style={{ scaleX: barScale }}
+              className="h-full origin-left bg-[color:var(--accent)]"
+            />
+          </div>
         </div>
       </section>
       <span id="after-vetting" className="block scroll-mt-20" />
@@ -128,10 +150,13 @@ function Caption({
   active: boolean;
 }) {
   const opacity = useTransform(progress, crossFadeStops(index, TOTAL, FADE), [0, 1, 1, 0]);
+  // Derived from the same value, so blur and lift stay in lockstep with the fade.
+  const filter = useMotionTemplate`blur(${useTransform(opacity, (v) => (1 - v) * 9)}px)`;
+  const y = useTransform(opacity, (v) => (1 - v) * 16);
   return (
     <motion.li
       aria-current={active ? "step" : undefined}
-      style={{ opacity }}
+      style={{ opacity, filter, y }}
       className={cn(index > 0 && "pointer-events-none absolute inset-0")}
     >
       <h2 className="font-display text-3xl font-medium sm:text-4xl">{STAGE_META[stage].label}.</h2>

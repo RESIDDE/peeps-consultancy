@@ -3,7 +3,7 @@ import { InteractionProvider } from "@/components/motion/interaction-provider";
 import { StudioNav } from "@/components/site/studio/nav";
 import { Hud } from "@/components/site/studio/hud";
 import { ScaleRail } from "@/components/site/studio/scale-rail";
-import { SiteFooter } from "@/components/site/footer";
+import { StudioFooter } from "@/components/site/studio/footer";
 
 /** Marketing pages stay static; the header discovers a session client-side. */
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
@@ -18,7 +18,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       </a>
       <StudioNav />
       <main id="main">{children}</main>
-      <SiteFooter />
+      <StudioFooter />
       <InteractionLayer />
       <ScaleRail />
       <Hud />

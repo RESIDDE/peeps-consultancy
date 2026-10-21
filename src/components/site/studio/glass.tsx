@@ -104,6 +104,24 @@ export function DraggableGlass({ children }: { children: React.ReactNode }) {
     return () => document.documentElement.classList.remove("lens-held");
   }, [held]);
 
+  useEffect(() => {
+    if (!held) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setHeld(false);
+    const drop = () => setHeld(false);
+    // On the window, not the element: if pointer capture never established, the release
+    // would land on the anchor instead and the glass would stay lifted with no way down.
+    window.addEventListener("pointerup", drop);
+    window.addEventListener("pointercancel", drop);
+    window.addEventListener("blur", drop);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("pointerup", drop);
+      window.removeEventListener("pointercancel", drop);
+      window.removeEventListener("blur", drop);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [held]);
+
   return (
     <>
       {/* The copy that lives in the hero. Hidden rather than unmounted, so the slot keeps its size. */}
@@ -111,10 +129,12 @@ export function DraggableGlass({ children }: { children: React.ReactNode }) {
         ref={anchor}
         data-no-lens
         data-lens-omit
-        className="cursor-grab touch-none transition-opacity duration-200"
+        className="cursor-grab transition-opacity duration-200"
         style={{ opacity: held ? 0 : 1 }}
         onPointerDown={(e) => {
-          if (e.button !== 0 || held) return;
+          // Mouse only. A finger that presses here is scrolling or using the lens, and
+          // preventDefault would take that gesture away.
+          if (e.pointerType !== "mouse" || e.button !== 0 || held) return;
           e.preventDefault();
           lift(e);
         }}
@@ -128,10 +148,8 @@ export function DraggableGlass({ children }: { children: React.ReactNode }) {
         drag
         dragListener={false}
         dragControls={controls}
-        dragMomentum
-        dragElastic={0.1}
-        dragTransition={{ power: 0.2, timeConstant: 340, bounceStiffness: 260, bounceDamping: 26 }}
-        onDragEnd={() => takeSnapshot(host.current)}
+        dragMomentum={false}
+        onDragEnd={() => setHeld(false)}
         whileDrag={{ scale: 1.04 }}
         style={{
           x,

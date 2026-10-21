@@ -50,16 +50,20 @@ export function InteractionProvider({ children }: { children: React.ReactNode })
   const [seen, setSeen] = useState<{ path: string; label: string } | null>(null);
   const activeChapter = seen && seen.path === pathname ? seen.label : null;
 
+  // Every pointer type, because the lens follows a finger as readily as a mouse. The cursor
+  // ring is gated separately. Passive, so tracking can never hold up a scroll.
   useEffect(() => {
-    if (!finePointer) return;
     const onMove = (e: PointerEvent) => {
-      if (e.pointerType !== "mouse") return;
       x.set(e.clientX);
       y.set(e.clientY);
     };
     window.addEventListener("pointermove", onMove, { passive: true });
-    return () => window.removeEventListener("pointermove", onMove);
-  }, [finePointer, x, y]);
+    window.addEventListener("pointerdown", onMove, { passive: true });
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerdown", onMove);
+    };
+  }, [x, y]);
 
   useEffect(() => {
     if (!finePointer) return;

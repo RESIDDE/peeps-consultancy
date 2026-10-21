@@ -18,8 +18,10 @@ import { useMotionEnv } from "@/components/motion/use-motion-env";
 import { DraggableGlass } from "./glass";
 import { CX, CY, R_GLASS, VIEW, Magnifier } from "./magnifier";
 
-/** How large the glass grows by the time it reaches the middle of the screen. */
-const ZOOM = 3.2;
+/** How large the glass grows by the time it reaches the middle of the screen. Gentler on a
+ *  phone, where 3.2x of a full-width object would cover the page rather than travel across it. */
+const ZOOM_WIDE = 3.2;
+const ZOOM_NARROW = 1.9;
 /** Degrees of lean at the far edge of the window. */
 const TILT = 14;
 const TILT_Z = 4;
@@ -34,7 +36,7 @@ export function StudioHero() {
   const slot = useRef<HTMLDivElement>(null);
   const drift = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
-  const { pointerExtras } = useMotionEnv();
+  const { pointerExtras, wide } = useMotionEnv();
   const pointer = usePointer();
 
   const { scrollYProgress } = useScroll({ target: section, offset: ["start start", "end start"] });
@@ -114,7 +116,7 @@ export function StudioHero() {
 
   const x = useTransform(() => scrollYProgress.get() * dx.get());
   const y = useTransform(() => scrollYProgress.get() * dy.get());
-  const scale = useTransform(scrollYProgress, [0, 1], [1, ZOOM]);
+  const scale = useTransform(scrollYProgress, [0, 1], [1, wide ? ZOOM_WIDE : ZOOM_NARROW]);
   // Hold it solid most of the way, then let go just before the next section lands.
   const opacity = useTransform(scrollYProgress, [0, 0.86, 1], [1, 1, 0]);
 

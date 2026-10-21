@@ -21,36 +21,45 @@ const NO_LENS = "input, textarea, select, [contenteditable], [data-no-lens]";
  * The clone is taken once per pick-up rather than per frame: dragging is then pure transform.
  */
 export function Lens() {
-  const { pointerExtras, wide } = useMotionEnv();
+  const { mounted, reduced, wide } = useMotionEnv();
   const pointer = usePointer();
   const { scrollX, scrollY } = useScroll();
 
   const host = useRef<HTMLDivElement>(null);
   const [held, setHeld] = useState(false);
-  const active = pointerExtras && held;
+  const [byTouch, setByTouch] = useState(false);
+  const active = mounted && !reduced && held;
 
-  const radius = wide ? 150 : 110;
+  const radius = wide ? 150 : 96;
+  // A finger covers what it points at, so on touch the lens floats clear of it — the same
+  // trick iOS uses for its text loupe. The focal point stays under the finger regardless.
+  const lift = byTouch ? radius + 28 : 0;
 
   // Follow with a little lag, the way a held object trails the hand.
   const follow = { stiffness: 700, damping: 44, mass: 0.5 };
-  const lx = useSpring(useTransform(pointer.x, (v) => v - radius), follow);
-  const ly = useSpring(useTransform(pointer.y, (v) => v - radius), follow);
+  const fx = useSpring(pointer.x, follow);
+  const fy = useSpring(pointer.y, follow);
+  const lx = useTransform(fx, (v) => v - radius);
+  const ly = useTransform(fy, (v) => v - lift - radius);
 
-  // Scale about the lens centre, so the magnified point sits exactly under the glass.
-  const innerX = useTransform(() => -(lx.get() + radius + scrollX.get()));
-  const innerY = useTransform(() => -(ly.get() + radius + scrollY.get()));
+  // The point under the pointer lands at the centre of the lens, wherever the lens sits.
+  const innerX = useTransform(() => -(fx.get() + scrollX.get()));
+  const innerY = useTransform(() => -(fy.get() + scrollY.get()));
   const inner = useMotionTemplate`translate(${radius}px, ${radius}px) scale(${ZOOM}) translate(${innerX}px, ${innerY}px)`;
 
   const snapshot = useCallback(() => takeSnapshot(host.current), []);
 
   useEffect(() => {
-    if (!pointerExtras) return;
+    if (!mounted || reduced) return;
 
+    // Deliberately never calls preventDefault: the press must still scroll the page. The
+    // lens rides along with the gesture rather than taking it over.
     const onDown = (e: PointerEvent) => {
-      if (e.pointerType !== "mouse" || e.button !== 0) return;
+      if (e.button !== 0) return;
       const target = e.target as Element | null;
       if (target?.closest(NO_LENS)) return;
 
+      setByTouch(e.pointerType !== "mouse");
       snapshot();
       setHeld(true);
     };
@@ -67,7 +76,7 @@ export function Lens() {
       window.removeEventListener("pointercancel", onUp);
       window.removeEventListener("blur", onUp);
     };
-  }, [pointerExtras, snapshot]);
+  }, [mounted, reduced, snapshot]);
 
   // A stale snapshot would magnify the wrong thing, so refresh it when the page moves under it.
   useEffect(() => {
@@ -92,7 +101,7 @@ export function Lens() {
     return () => document.documentElement.classList.remove("lens-held");
   }, [active]);
 
-  if (!pointerExtras) return null;
+  if (!mounted || reduced) return null;
 
   return (
     <motion.div
