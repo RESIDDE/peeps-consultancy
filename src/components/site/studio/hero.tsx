@@ -1,8 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
-import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowDown, Globe } from "lucide-react";
 import {
   motion,
   useMotionTemplate,
@@ -15,6 +14,7 @@ import {
 import { usePointer } from "@/components/motion/interaction-provider";
 import { takeSnapshot } from "@/components/motion/page-snapshot";
 import { useMotionEnv } from "@/components/motion/use-motion-env";
+import { CtaLine } from "./cta-line";
 import { DraggableGlass } from "./glass";
 import { CX, CY, R_GLASS, VIEW, Magnifier } from "./magnifier";
 
@@ -153,75 +153,93 @@ export function StudioHero() {
   // invalidate it; only a change of layout does.
   useEffect(() => {
     if (still) return;
-    const take = () => takeSnapshot(lensHost.current, { invert: false });
+    const take = () => takeSnapshot(lensHost.current);
     take();
     window.addEventListener("resize", take);
     return () => window.removeEventListener("resize", take);
   }, [still]);
 
-
   return (
-    <section
-      ref={section}
-      id="intro"
-      data-chapter="Intro"
-      data-x="Hero"
-      className="shell relative grid items-end gap-10 pb-14 pt-24 sm:pt-28 lg:min-h-[calc(100dvh-4.5rem)] lg:grid-cols-[1.12fr_0.88fr] lg:gap-14 lg:pb-16"
-    >
-      <h1 className="display" data-x="Heading" data-x-font="true">
-        Look closer before you hire.
-      </h1>
+    <section ref={section} id="intro" className="relative flex min-h-svh flex-col">
+      <Orbits />
 
-      <div className="flex h-full flex-col justify-between gap-10">
-        <div ref={slot} className="ml-auto w-[min(100%,30rem)] lg:w-[min(100%,34rem)]">
-          {/* Three transforms, nested so they compose: scroll travel, idle drift, pointer lean. */}
-          <DraggableGlass>
-            <motion.div
-              style={still ? undefined : { x, y, scale, opacity, willChange: "transform" }}
-              className="origin-center"
-            >
-              <div ref={drift} data-idle="true" className="loupe-float" style={{ perspective: "1200px" }}>
-                <motion.div style={pointerExtras ? { rotateX, rotateY, rotateZ } : undefined}>
-                  <Magnifier>
+      <div className="shell relative z-10 pt-32 sm:pt-36">
+        <h1 className="display max-w-[11ch]">Look closer before you hire.</h1>
+        <div className="mt-10 flex flex-wrap gap-x-6 gap-y-4">
+          <CtaLine href="/employers#request">Request talent</CtaLine>
+          <CtaLine href="/how-we-select">See how we select</CtaLine>
+        </div>
+      </div>
+
+      {/* The centrepiece. In the flow on a phone, floated over the middle of the hero above. */}
+      <div
+        ref={slot}
+        className="relative mx-auto mt-12 w-[min(78%,22rem)] lg:absolute lg:left-1/2 lg:top-1/2 lg:mt-0 lg:w-[min(36rem,40vw)] lg:-translate-x-[30%] lg:-translate-y-[42%]"
+      >
+        {/* Three transforms, nested so they compose: scroll travel, idle drift, pointer lean. */}
+        <DraggableGlass>
+          <motion.div
+            style={still ? undefined : { x, y, scale, opacity, willChange: "transform" }}
+            className="origin-center"
+          >
+            <div ref={drift} data-idle="true" className="loupe-float" style={{ perspective: "1200px" }}>
+              <motion.div style={pointerExtras ? { rotateX, rotateY, rotateZ } : undefined}>
+                <Magnifier>
                   {/* A clear lens: the page around the glass, magnified, with nothing
                       painted behind it. */}
                   {!still && <motion.div ref={lensHost} style={{ transform: lensInner }} />}
                 </Magnifier>
-                </motion.div>
-              </div>
-            </motion.div>
-          </DraggableGlass>
-        </div>
+              </motion.div>
+            </div>
+          </motion.div>
+        </DraggableGlass>
+      </div>
 
-        <div className="max-w-[34ch]">
-          <p className="text-lg leading-relaxed text-muted-foreground sm:text-xl" data-x="Intro" data-x-font="true">
-            Recruitment, assessment and workforce development in Nigeria. Every shortlist arrives
-            with the evidence behind each name.
-          </p>
+      {/* Pointer-transparent where it overlaps the glass, so the glass can still be picked up. */}
+      <div className="shell pointer-events-none relative z-10 mt-auto grid gap-10 pb-8 pt-12 lg:grid-cols-3 lg:items-end">
+        <a href="#about" aria-label="Scroll to the next section" className="pointer-events-auto hidden size-[1.125rem] place-items-center rounded-full border border-current lg:grid">
+          <ArrowDown className="size-2.5" aria-hidden />
+        </a>
 
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Link
-              href="/employers#request"
-              className="group inline-flex items-center gap-3 rounded-full bg-ink py-2 pl-6 pr-2 text-ink-foreground transition-transform duration-200 hover:-translate-y-0.5"
-              data-x="Button"
-            >
-              <span className="font-medium">Request talent</span>
-              <span className="inline-flex size-9 items-center justify-center rounded-full bg-[color:var(--accent)] text-white">
-                <ArrowUpRight className="size-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden />
-              </span>
-            </Link>
-            <Link
-              href="/how-we-select"
-              className="group inline-flex items-center gap-3 rounded-full border border-border py-2 pl-6 pr-2 transition-[transform,border-color] duration-200 hover:-translate-y-0.5 hover:border-foreground/30"
-            >
-              <span className="font-medium">See how we select</span>
-              <span className="inline-flex size-9 items-center justify-center rounded-full border border-border">
-                <ArrowUpRight className="size-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden />
-              </span>
-            </Link>
+        <p className="label hidden text-center pointer-fine:lg:block">
+          Press the glass to pick it up.
+          <br />
+          Look closer at anything on the page.
+        </p>
+
+        <div className="pointer-events-auto lg:justify-self-end">
+          <div className="flex w-fit border border-border">
+            <div className="flex w-[5.75rem] flex-col items-center justify-center gap-2 border-r border-border py-3">
+              <Globe className="size-6" strokeWidth={1.25} aria-hidden />
+              <span className="label text-[0.75rem]">Abuja, NG</span>
+            </div>
+            <p className="label flex max-w-[11rem] items-center px-4 text-[0.75rem]">Evidence on every shortlist.</p>
           </div>
+          <p className="mt-6 max-w-[30ch] text-[0.95rem] leading-snug">
+            Recruitment, assessment and workforce development in Nigeria. Every shortlist arrives with the evidence
+            behind each name.
+          </p>
         </div>
       </div>
     </section>
+  );
+}
+
+/** Faint orbits behind the hero, turning very slowly. Decorative, and gone under reduced motion. */
+function Orbits() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 1440 900"
+      preserveAspectRatio="xMidYMid slice"
+      className="pointer-events-none absolute inset-0 size-full text-foreground"
+      fill="none"
+    >
+      <g className="orbit" style={{ transformOrigin: "720px 450px" }}>
+        <ellipse cx="720" cy="450" rx="980" ry="260" transform="rotate(-24 720 450)" stroke="currentColor" strokeOpacity="0.1" />
+        <ellipse cx="720" cy="450" rx="760" ry="420" transform="rotate(38 720 450)" stroke="currentColor" strokeOpacity="0.07" />
+        <ellipse cx="720" cy="450" rx="1180" ry="150" transform="rotate(-8 720 450)" stroke="currentColor" strokeOpacity="0.06" />
+      </g>
+    </svg>
   );
 }

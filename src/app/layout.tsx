@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque, Caveat, Fraunces, IBM_Plex_Mono, Inter, Space_Grotesk } from "next/font/google";
+import { Caveat, Familjen_Grotesk, Fraunces, IBM_Plex_Mono, Inter, Inter_Tight } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -11,9 +11,10 @@ const fraunces = Fraunces({
 });
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 // The marketing site's own faces. Scoped to `.studio` in globals.css, so the console,
-// the portals and the admin app keep the PEEPs brand faces above.
-const bricolage = Bricolage_Grotesque({ subsets: ["latin"], variable: "--font-bricolage", display: "swap" });
-const space = Space_Grotesk({ subsets: ["latin"], variable: "--font-space", display: "swap" });
+// the portals and the admin app keep the PEEPs brand faces above. Familjen sets the
+// display type and the labels; Inter Tight sets running text.
+const familjen = Familjen_Grotesk({ subsets: ["latin"], variable: "--font-familjen", display: "swap" });
+const interTight = Inter_Tight({ subsets: ["latin"], variable: "--font-inter-tight", display: "swap" });
 const plex = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-plex", display: "swap" });
 const caveat = Caveat({ subsets: ["latin"], variable: "--font-caveat", display: "swap" });
 
@@ -39,7 +40,7 @@ const themeScript = `(function(){try{var t=localStorage.getItem('peeps-theme');v
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en-NG" data-scroll-behavior="smooth" suppressHydrationWarning className={`${fraunces.variable} ${inter.variable} ${bricolage.variable} ${space.variable} ${plex.variable} ${caveat.variable}`}>
+    <html lang="en-NG" data-scroll-behavior="smooth" suppressHydrationWarning className={`${fraunces.variable} ${inter.variable} ${familjen.variable} ${interTight.variable} ${plex.variable} ${caveat.variable}`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>

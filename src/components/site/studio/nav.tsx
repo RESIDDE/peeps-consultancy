@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowUpRight, Moon, Sun, X } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
+import { getLenis } from "@/components/motion/smooth-scroll";
 import { TalentProfileCard } from "@/components/site/talent-profile-card";
 import { COMPANY, DIVISIONS, VERTICALS } from "@/lib/content";
 import { homeFor } from "@/lib/roles";
 import { cn } from "@/lib/utils";
+import { CtaLine, Roll } from "./cta-line";
 
 /** The theme lives on <html> and in localStorage, where the blocking script in the root
  *  layout reads it back before first paint. Both controls go through here. */
@@ -33,8 +35,8 @@ const ITEMS = [
 
 export function StudioNav() {
   const pathname = usePathname();
+  const header = useRef<HTMLElement>(null);
   const [open, setOpen] = useState(false);
-  const [xray, setXray] = useState(false);
   const [accountHref, setAccountHref] = useState<string | null>(null);
 
   useEffect(() => {
@@ -48,11 +50,14 @@ export function StudioNav() {
     return () => ctrl.abort();
   }, []);
 
-  // The menu covers the page, so the page behind it must not scroll.
+  // The menu covers the page, so the page behind it must not scroll, smoothly or otherwise.
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
+    if (open) getLenis()?.stop();
+    else getLenis()?.start();
     return () => {
       document.body.style.overflow = "";
+      getLenis()?.start();
     };
   }, [open]);
 
@@ -63,66 +68,86 @@ export function StudioNav() {
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
 
-  // The pill only appears once the page has moved. Written straight to the DOM, because a
-  // scroll must not cost a render.
+  // The nav takes its colours from whatever is beneath it: a section's fixed tone where it
+  // has one, the theme where it does not. Sampled at the nav's own height, once a frame at
+  // most, and written straight to the DOM so a scroll never costs a render.
   useEffect(() => {
-    const scope = document.querySelector(".studio");
-    if (!scope) return;
-    const onScroll = () => scope.toggleAttribute("data-scrolled", window.scrollY > 8);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  // X-ray inverts the whole scope, so the class belongs on the scope, not here.
-  useEffect(() => {
-    document.querySelector(".studio")?.classList.toggle("xray", xray);
-  }, [xray]);
+    const el = header.current;
+    if (!el) return;
+    let frame = 0;
+    const read = () => {
+      frame = 0;
+      const under = document
+        .elementsFromPoint(window.innerWidth / 2, Math.min(48, window.innerHeight - 1))
+        .map((hit) => hit.closest<HTMLElement>("[data-tone]"))
+        .find(Boolean);
+      const tone = under?.dataset.tone ?? (document.documentElement.classList.contains("dark") ? "dark" : "light");
+      if (el.dataset.tone !== tone) el.dataset.tone = tone;
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(read);
+    };
+    read();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    const theme = new MutationObserver(schedule);
+    theme.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      theme.disconnect();
+    };
+  }, [pathname, open]);
 
   return (
     <>
-      <header className="studio-nav">
-        <Link href="/" aria-label={`${COMPANY.name} home`} className="nav-pill" onClick={() => setOpen(false)}>
+      <header ref={header} className="studio-nav" data-tone="dark">
+        <Link href="/" aria-label={`${COMPANY.name} home`} onClick={() => setOpen(false)}>
           <Logo />
         </Link>
 
-        <div className="nav-pill nav-pill--group">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setTheme(!document.documentElement.classList.contains("dark"))}
             aria-label="Toggle dark mode"
-            className="inline-flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
+            className="nav-dot"
           >
             {/* Swapped in CSS rather than from state: the server cannot know the theme, and
                 the blocking script sets the class before React ever runs. */}
-            <Sun className="hidden size-4 dark:block" aria-hidden />
-            <Moon className="size-4 dark:hidden" aria-hidden />
+            <Sun className="hidden size-3.5 dark:block" aria-hidden />
+            <Moon className="size-3.5 dark:hidden" aria-hidden />
           </button>
-          <Link href="/employers#request" className="chars hidden px-2 py-1 sm:inline-flex">
-            Request talent
+          <Link href="/employers#request" className="pill pill--solid hidden sm:inline-flex">
+            <Roll>Request talent</Roll>
           </Link>
           <button
             type="button"
             onClick={() => setOpen((o) => !o)}
             aria-expanded={open}
             aria-controls="studio-menu"
-            aria-label={open ? "Close menu" : "Open menu"}
-            className="nav-key"
+            className="pill"
           >
-            {open ? (
-              <X className="size-4" aria-hidden />
-            ) : (
-              <span aria-hidden className="flex w-4 flex-col gap-[3px]">
-                <span className="h-px w-full bg-current" />
-                <span className="h-px w-full bg-current" />
-              </span>
-            )}
+            <Roll>{open ? "Close" : "Menu"}</Roll>
+            <span aria-hidden className={cn("flex w-3.5 flex-col gap-[3px] transition-transform duration-300", open && "rotate-45")}>
+              <span className={cn("h-px w-full bg-current transition-transform duration-300", open && "translate-y-[2px]")} />
+              <span className={cn("h-px w-full bg-current transition-transform duration-300", open && "-translate-y-[2px] -rotate-90")} />
+            </span>
           </button>
         </div>
       </header>
 
-      <div id="studio-menu" className="menu-sheet" data-open={open || undefined} aria-hidden={!open}>
-        <div className="shell grid h-full grid-cols-1 content-start gap-12 pb-44 pt-28 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16 lg:pt-36">
+      <div
+        id="studio-menu"
+        data-tone="dark"
+        data-lenis-prevent
+        data-lens-omit
+        className="menu-sheet tone-dark"
+        data-open={open || undefined}
+        aria-hidden={!open}
+      >
+        <div className="shell grid h-full grid-cols-1 content-start gap-12 pb-44 pt-32 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16 lg:pt-40">
           <nav aria-label="Main">
             <ul>
               {ITEMS.map((item, i) => (
@@ -135,7 +160,7 @@ export function StudioNav() {
                     className="menu-link"
                   >
                     <span className="menu-word">{item.label}</span>
-                    <span className="menu-note">{item.note}</span>
+                    <span className="menu-note label">{item.note}</span>
                   </Link>
                 </li>
               ))}
@@ -144,45 +169,28 @@ export function StudioNav() {
 
           <aside className="menu-row hidden lg:block" style={{ "--i": ITEMS.length } as React.CSSProperties}>
             <TalentProfileCard className="w-full max-w-md" />
-            <p className="label mt-6">A sample talent profile</p>
+            <p className="label mt-6 text-muted-foreground">A sample talent profile</p>
           </aside>
         </div>
 
         <div className="menu-foot shell">
-          <Link
-            href="/employers#request"
-            onClick={() => setOpen(false)}
-            tabIndex={open ? 0 : -1}
-            className="group inline-flex items-center gap-3 font-medium"
-          >
-            Request talent
-            <span className="inline-flex size-9 items-center justify-center rounded-full bg-[color:var(--accent)] text-white">
-              <ArrowUpRight className="size-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden />
-            </span>
-          </Link>
+          <span onClick={() => setOpen(false)}>
+            <CtaLine href="/employers#request">Request talent</CtaLine>
+          </span>
 
-          <div className="label flex flex-col gap-1 normal-case tracking-normal">
-            <a href={`mailto:${COMPANY.email}`} tabIndex={open ? 0 : -1} className="hover:text-foreground">
+          <div className="label flex flex-col gap-1 normal-case">
+            <a href={`mailto:${COMPANY.email}`} tabIndex={open ? 0 : -1} className="hover:text-muted-foreground">
               {COMPANY.email}
             </a>
-            <span>{COMPANY.city}</span>
+            <span className="text-muted-foreground">{COMPANY.city}</span>
           </div>
 
           <div className="flex items-center gap-4">
-            <button
-              type="button"
-              tabIndex={open ? 0 : -1}
-              onClick={() => setXray((on) => !on)}
-              aria-pressed={xray}
-              className="label hover:text-foreground"
-            >
-              X-ray
-            </button>
             <ThemeSwitch open={open} />
-            <Link href={accountHref ?? "/sign-in"} tabIndex={open ? 0 : -1} className="label hover:text-foreground">
+            <Link href={accountHref ?? "/sign-in"} tabIndex={open ? 0 : -1} className="label hover:text-muted-foreground">
               {accountHref ? "Dashboard" : "Sign in"}
             </Link>
-            <Link href="/privacy" tabIndex={open ? 0 : -1} className="label hover:text-foreground">
+            <Link href="/privacy" tabIndex={open ? 0 : -1} className="label hover:text-muted-foreground">
               Privacy
             </Link>
           </div>
@@ -195,7 +203,7 @@ export function StudioNav() {
 /** The segmented Light / Dark control, on the same storage key as the rest of the app. */
 function ThemeSwitch({ open }: { open: boolean }) {
   return (
-    <span className="theme-switch">
+    <span className="theme-switch label">
       {[
         { label: "Light", dark: false },
         { label: "Dark", dark: true },
@@ -205,7 +213,10 @@ function ThemeSwitch({ open }: { open: boolean }) {
           type="button"
           tabIndex={open ? 0 : -1}
           onClick={() => setTheme(o.dark)}
-          className={cn("theme-switch__option", o.dark ? "dark:bg-background dark:text-foreground" : "bg-background text-foreground dark:bg-transparent dark:text-inherit")}
+          className={cn(
+            "theme-switch__option",
+            o.dark ? "dark:bg-foreground dark:text-background" : "bg-foreground text-background dark:bg-transparent dark:text-inherit",
+          )}
         >
           {o.label}
         </button>
