@@ -1,49 +1,81 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { Mail, MapPin, Phone } from "lucide-react";
-import { PageHero, Section } from "@/components/site/section";
 import { EnquiryForm } from "@/components/site/forms";
+import { CtaLine } from "@/components/site/studio/cta-line";
+import { LagosClock } from "@/components/site/studio/lagos-clock";
+import { FormBlock, MoreLinks, PageOpening, Tone } from "@/components/site/studio/page-kit";
+
 import { COMPANY } from "@/lib/content";
 
 export const metadata: Metadata = { title: "Contact", description: "Get in touch with PEEPs.HR Partners." };
 
+const WAYS = [
+  { label: "Email", value: COMPANY.email, href: `mailto:${COMPANY.email}` },
+  { label: "Phone / WhatsApp", value: COMPANY.phone, href: `tel:${COMPANY.phone.replace(/\s/g, "")}` },
+  { label: "Office", value: COMPANY.city },
+];
+
 export default function ContactPage() {
   return (
     <>
-      <PageHero eyebrow="Contact" title="Let's talk about your people." lead="Whether you're hiring, training, partnering or building your career, a PEEPs consultant will respond within one working day." />
-      <Section>
-        <div className="grid gap-10 lg:grid-cols-[1fr_1.6fr]">
-          <div className="grid content-start gap-4">
-            {[
-              { icon: Mail, label: "Email", value: COMPANY.email, href: `mailto:${COMPANY.email}` },
-              { icon: Phone, label: "Phone / WhatsApp", value: COMPANY.phone, href: `tel:${COMPANY.phone.replace(/\s/g, "")}` },
-              { icon: MapPin, label: "Office", value: COMPANY.city },
-            ].map((c) => (
-              <div key={c.label} className="flex items-start gap-4 rounded-2xl border bg-card p-5">
-                <c.icon className="mt-0.5 size-5 text-primary" />
-                <div>
-                  <p className="text-xs text-muted-foreground">{c.label}</p>
-                  {c.href ? (
-                    <a href={c.href} className="font-medium hover:text-primary">{c.value}</a>
+      <Tone tone="dark">
+        <PageOpening
+          label="Contact"
+          title="Let's talk about your people."
+          lede="Whether you're hiring, training, partnering or building your career, a PEEPs consultant will respond within one working day."
+          actions={
+            <>
+              <CtaLine href="/employers#request">Request talent</CtaLine>
+              <CtaLine href="#message">Send a message</CtaLine>
+            </>
+          }
+        >
+          <ul className="mt-auto pt-20">
+            {WAYS.map((way) => (
+              <li key={way.label} className="hairline last:border-b">
+                <div className="grid items-baseline gap-x-10 gap-y-2 py-6 md:grid-cols-[12rem_minmax(0,1fr)]">
+                  <span className="label text-muted-foreground">{way.label}</span>
+                  {way.href ? (
+                    <a href={way.href} className="subhead transition-opacity duration-300 hover:opacity-60">
+                      {way.value}
+                    </a>
                   ) : (
-                    <p className="font-medium">{c.value}</p>
+                    <span className="subhead">{way.value}</span>
                   )}
                 </div>
-              </div>
+              </li>
             ))}
-            <p className="mt-2 text-sm text-muted-foreground">
-              Hiring? The fastest route is a{" "}
-              <Link href="/employers#request" className="font-medium text-primary underline-offset-4 hover:underline">
-                talent request
-              </Link>
-              .
-            </p>
-          </div>
-          <div className="rounded-3xl border bg-card p-6 sm:p-8">
-            <EnquiryForm type="contact" />
-          </div>
-        </div>
-      </Section>
+          </ul>
+
+          <p className="label mt-8 text-muted-foreground">
+            Office hours, WAT → <LagosClock />
+          </p>
+        </PageOpening>
+      </Tone>
+
+      <Tone tone="light">
+        <FormBlock
+          id="message"
+          label="Send a message"
+          title="What can we help with?"
+          lede="Hiring? The fastest route is a talent request — it goes straight to a consultant with the detail they need to start."
+          aside={
+            <CtaLine href="/employers#request" className="mt-12">
+              Request talent instead
+            </CtaLine>
+          }
+        >
+          <EnquiryForm type="contact" />
+        </FormBlock>
+
+        <MoreLinks
+          label="Elsewhere on the site"
+          items={[
+            { href: "/employers", label: "Employers", note: "Request a shortlist" },
+            { href: "/candidates", label: "Talent", note: "Join the registry" },
+            { href: "/partners", label: "Partners", note: "Train with us" },
+          ]}
+        />
+      </Tone>
     </>
   );
 }

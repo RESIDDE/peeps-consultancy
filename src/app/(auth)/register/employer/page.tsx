@@ -12,10 +12,12 @@ export const metadata: Metadata = { title: "Employer account" };
 export default function RegisterEmployerPage() {
   return (
     <div>
-      <p className="eyebrow">For employers</p>
-      <h1 className="font-display mt-2 text-4xl font-medium">Create an employer account</h1>
-      <p className="mt-2 text-muted-foreground">Post vacancies, review evidence-based shortlists and track every hire in one place.</p>
-      <ActionForm action={registerEmployer} className="mt-8 grid gap-4 sm:grid-cols-2">
+      <p className="label text-muted-foreground">For employers</p>
+      <h1 className="headline mt-5 text-[clamp(2rem,3.2vw,2.8rem)]">Create an employer account.</h1>
+      <p className="mt-5 max-w-[38ch] text-[0.95rem] leading-snug text-muted-foreground">
+        Post vacancies, review evidence-based shortlists and track every hire in one place.
+      </p>
+      <ActionForm action={registerEmployer} className="mt-12 grid gap-4 sm:grid-cols-2">
         <Field label="Company name" name="company" required className="sm:col-span-2">
           <Input id="company" name="company" autoComplete="organization" required />
         </Field>
@@ -50,9 +52,12 @@ export default function RegisterEmployerPage() {
           Create employer account
         </SubmitButton>
       </ActionForm>
-      <p className="mt-6 text-sm text-muted-foreground">
+      <p className="label mt-10 border-t border-border pt-7 text-muted-foreground">
         Prefer to talk first?{" "}
-        <Link href="/employers#request" className="font-medium text-primary hover:underline">Submit a talent request</Link> instead.
+        <Link href="/employers#request" className="text-foreground underline-offset-4 hover:underline">
+          Submit a talent request
+        </Link>{" "}
+        instead.
       </p>
     </div>
   );

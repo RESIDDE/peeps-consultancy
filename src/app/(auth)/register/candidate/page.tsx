@@ -13,12 +13,12 @@ export const metadata: Metadata = { title: "Join the talent registry" };
 export default function RegisterCandidatePage() {
   return (
     <div>
-      <p className="eyebrow">PEEPs Talent Registry</p>
-      <h1 className="font-display mt-2 text-4xl font-medium">Create your profile</h1>
-      <p className="mt-2 text-muted-foreground">
+      <p className="label text-muted-foreground">PEEPs Talent Registry</p>
+      <h1 className="headline mt-5 text-[clamp(2rem,3.2vw,2.8rem)]">Create your profile.</h1>
+      <p className="mt-5 max-w-[38ch] text-[0.95rem] leading-snug text-muted-foreground">
         It&apos;s free. You&apos;ll get a PEEPs ID straight away and can complete your profile in your dashboard.
       </p>
-      <ActionForm action={registerCandidate} className="mt-8 grid gap-4 sm:grid-cols-2">
+      <ActionForm action={registerCandidate} className="mt-12 grid gap-4 sm:grid-cols-2">
         <Field label="First name" name="firstName" required>
           <Input id="firstName" name="firstName" autoComplete="given-name" required />
         </Field>
@@ -62,7 +62,7 @@ export default function RegisterCandidatePage() {
           <Input id="password" name="password" type="password" autoComplete="new-password" minLength={8} required />
         </Field>
         <div className="sm:col-span-2">
-          <label className="flex gap-3 rounded-2xl border bg-muted/40 p-4 text-sm leading-relaxed">
+          <label className="flex gap-4 rounded-[7px] border border-border p-5 text-[0.9rem] leading-snug">
             <Checkbox name="consent" required className="mt-0.5" />
             <span>
               {CONSENT_TEXT}{" "}
@@ -80,9 +80,11 @@ export default function RegisterCandidatePage() {
           Create my PEEPs profile
         </SubmitButton>
       </ActionForm>
-      <p className="mt-6 text-sm text-muted-foreground">
+      <p className="label mt-10 border-t border-border pt-7 text-muted-foreground">
         Already registered?{" "}
-        <Link href="/sign-in" className="font-medium text-primary hover:underline">Sign in</Link>
+        <Link href="/sign-in" className="text-foreground underline-offset-4 hover:underline">
+          Sign in
+        </Link>
       </p>
     </div>
   );

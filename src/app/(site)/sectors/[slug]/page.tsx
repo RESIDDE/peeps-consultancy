@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, ClipboardCheck, Lightbulb } from "lucide-react";
-import { HeroPanel, PageHero, Section, SectionHeading } from "@/components/site/section";
-import { buttonVariants } from "@/components/ui/button";
+import { CtaLine } from "@/components/site/studio/cta-line";
+import { Block, Boxes, MarkRule, MoreLinks, PageOpening, Pronouncement, SectionHead, Tone } from "@/components/site/studio/page-kit";
+import { WordMarquee } from "@/components/site/studio/word-marquee";
 import { VERTICALS } from "@/lib/content";
 import { SECTOR_BY_CODE } from "@/lib/taxonomy";
 
@@ -17,78 +16,102 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return v ? { title: `${v.name} Talent`, description: v.blurb } : {};
 }
 
+const pad = (n: number) => String(n).padStart(2, "0");
+
 export default async function SectorPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const v = VERTICALS.find((x) => x.slug === slug);
   if (!v) notFound();
+  const others = VERTICALS.filter((x) => x.slug !== v.slug);
 
   return (
     <>
-      <PageHero
-        eyebrow={v.launch ? "Launch vertical" : "Growing talent pool"}
-        title={`${v.name} talent`}
-        lead={v.blurb}
-        aside={
-          <HeroPanel title="Candidates are assessed on">
-            <ul className="flex flex-wrap gap-2">
-              {v.assessment.map((a) => (
-                <li key={a} className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3.5 py-1.5 text-sm font-medium text-secondary-foreground">
-                  <ClipboardCheck className="size-3.5 text-primary" aria-hidden /> {a}
-                </li>
-              ))}
-            </ul>
-            <p className="mt-5 border-t pt-4 text-sm text-muted-foreground">
-              {v.roles.length} role types in this pool. The full list is below.
-            </p>
-          </HeroPanel>
-        }
-      >
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <Link href="/employers#request" className={buttonVariants({ size: "lg" })}>
-            Request {v.name.toLowerCase()} talent <ArrowRight />
-          </Link>
-          <Link href="/register/candidate" className={buttonVariants({ size: "lg", variant: "outline" })}>
-            Join this talent pool
-          </Link>
-        </div>
-      </PageHero>
+      <Tone tone="dark">
+        <PageOpening
+          label={v.launch ? "Launch vertical" : "Growing talent pool"}
+          title={`${v.name} talent.`}
+          lede={v.blurb}
+          actions={
+            <>
+              <CtaLine href="/employers#request">Request talent</CtaLine>
+              <CtaLine href="/register/candidate">Join this pool</CtaLine>
+            </>
+          }
+          facts={[
+            { value: pad(v.roles.length), label: "Role types in this pool" },
+            { value: pad(v.assessment.length), label: "Things every candidate here is assessed on" },
+            { value: pad(v.sectors.length), label: v.sectors.map((c) => SECTOR_BY_CODE[c].name).join(" · ") },
+          ]}
+        />
 
-      <Section>
-        <div className="grid gap-12 lg:grid-cols-[1.2fr_1fr]">
-          <div>
-            <SectionHeading eyebrow="Roles we place" title="Who you'll find in this pool." />
-            <ul className="mt-8 grid gap-px overflow-hidden rounded-3xl border bg-border sm:grid-cols-2">
-              {v.roles.map((r) => (
-                <li key={r} className="bg-card px-5 py-4 font-medium">{r}</li>
-              ))}
-            </ul>
-            <p className="mt-6 text-sm text-muted-foreground">
-              Talent categories: {v.sectors.map((c) => SECTOR_BY_CODE[c].name).join(" · ")}
-            </p>
+        <WordMarquee
+          words={v.assessment}
+          lead={
+            <>
+              Assessed on,
+              <br />
+              not asked about.
+            </>
+          }
+          foot={`✦ ${v.name}, tested before you meet them.`}
+        />
+      </Tone>
+
+      <Tone tone="light">
+        <Block>
+          <SectionHead
+            label="Roles we place"
+            title="Who you'll find in this pool."
+            lede="Every one of them reaches you screened, verified and assessed, with the evidence on file."
+          />
+
+          <ul className="shell mt-16 grid sm:grid-cols-2 sm:gap-x-12">
+            {v.roles.map((r, i) => (
+              <li key={r} className="hairline flex items-baseline gap-6 py-5">
+                <span className="label text-muted-foreground">{pad(i + 1)}</span>
+                <span className="text-[1.15rem] leading-snug">{r}</span>
+              </li>
+            ))}
+          </ul>
+          <div aria-hidden className="shell">
+            <div className="hairline" />
           </div>
-          <div className="grid content-start gap-4">
-            <div className="rounded-3xl bg-ink p-7 text-ink-foreground">
-              <Lightbulb className="size-6 text-gold" />
-              <h3 className="font-display mt-4 text-2xl font-medium">Why PEEPs for {v.name.toLowerCase()}</h3>
-              <p className="mt-3 leading-relaxed text-white/75">{v.why}</p>
-            </div>
-            <div className="rounded-3xl border bg-card p-7">
-              <ClipboardCheck className="size-6 text-primary" />
-              <h3 className="font-display mt-4 text-2xl font-medium">What we assess</h3>
-              <ul className="mt-4 grid gap-2">
-                {v.assessment.map((a) => (
-                  <li key={a} className="flex items-center gap-2 text-sm">
-                    <span className="size-1.5 rounded-full bg-gold" /> {a}
-                  </li>
-                ))}
-              </ul>
-              <Link href="/how-we-select" className={buttonVariants({ variant: "link", className: "mt-4" })}>
-                Full methodology <ArrowRight />
-              </Link>
-            </div>
+        </Block>
+      </Tone>
+
+      <Tone tone="dark">
+        <Pronouncement
+          foot={
+            <>
+              <p className="text-[0.95rem] leading-snug text-muted-foreground">{v.why}</p>
+              <CtaLine href="/how-we-select" className="mt-12">
+                Read the full method
+              </CtaLine>
+            </>
+          }
+        >
+          Why PEEPs for {v.name.toLowerCase()}.
+        </Pronouncement>
+
+        <Block className="pt-0">
+          <div className="shell">
+            <p className="label text-muted-foreground">Candidates here are assessed on</p>
+            <Boxes className="mt-7" items={v.assessment} />
           </div>
-        </div>
-      </Section>
+          <MarkRule className="mt-24 w-[80%]" mark="cross" />
+        </Block>
+      </Tone>
+
+      <Tone tone="light">
+        <MoreLinks
+          label="Other talent pools"
+          items={others.map((o) => ({
+            href: `/sectors/${o.slug}`,
+            label: o.name,
+            note: o.launch ? "Launch vertical" : "Growing pool",
+          }))}
+        />
+      </Tone>
     </>
   );
 }

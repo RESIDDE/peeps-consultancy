@@ -6,6 +6,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { EMPLOYER_PROCESS } from "@/lib/content";
 import { cn } from "@/lib/utils";
 import { BlurHeading } from "./blur-heading";
+import { MarkRule } from "./page-kit";
 import { CtaLine } from "./cta-line";
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -39,7 +40,7 @@ export function HowItWorks() {
         </p>
       </div>
 
-      <Rule className="mt-20 w-[60%] md:mt-24" mark="plus" />
+      <MarkRule className="mt-20 w-[60%] md:mt-24" mark="plus" />
 
       <div className="shell mt-16 grid gap-14 md:mt-20 lg:grid-cols-2">
         <ol className="lg:pl-[calc((100vw-2*var(--shell))/12)]">
@@ -111,7 +112,7 @@ export function HowItWorks() {
         </div>
       </div>
 
-      <Rule className="mt-28 w-[80%]" mark="cross" />
+      <MarkRule className="mt-28 w-[80%]" mark="cross" />
     </section>
   );
 }
@@ -139,17 +140,5 @@ function SquareButton({
     >
       {children}
     </button>
-  );
-}
-
-/** A centred rule with a mark at its middle: a plus to open a section, a cross to close it. */
-function Rule({ className, mark }: { className?: string; mark: "plus" | "cross" }) {
-  return (
-    <div aria-hidden className={cn("relative mx-auto h-px bg-border", className)}>
-      <span className={cn("absolute left-1/2 top-1/2 size-[13px] -translate-x-1/2 -translate-y-1/2", mark === "cross" && "rotate-45")}>
-        <span className="absolute left-1/2 top-0 h-full w-px bg-foreground/70" />
-        <span className="absolute left-0 top-1/2 h-px w-full bg-foreground/70" />
-      </span>
-    </div>
   );
 }
