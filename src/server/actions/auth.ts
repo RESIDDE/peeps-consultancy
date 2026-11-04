@@ -10,10 +10,11 @@ import { candidates, employerContacts, employers, user } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { fail, type ActionState } from "@/lib/action-state";
 import { homeFor } from "@/lib/permissions";
-import { isSectorCode } from "@/lib/taxonomy";
+import { isSectorCode, SECTORS } from "@/lib/taxonomy";
 import { CONSENT_VERSION } from "@/lib/consent";
 import { issuePepId } from "../pep";
 import { logActivity } from "../activity";
+import { recordSubmission } from "../intake";
 import { fieldErrors, int, str, zEmail, zPhone, zRequired } from "../forms";
 
 const password = z.string().min(8, "Use at least 8 characters").max(128);
@@ -128,6 +129,25 @@ export async function registerCandidate(_: ActionState, fd: FormData): Promise<A
     pendingUserId = null;
     await auth.api.signInEmail({ body: { email: d.email, password: d.password }, headers: await headers() });
     await logActivity(res.user.id, "candidate", c.id, "registered", `Self-registered as ${pepId}`);
+    await recordSubmission({
+      type: "candidate_registration",
+      name: `${d.firstName} ${d.lastName}`,
+      email: d.email,
+      phone: d.phone,
+      subject: `${pepId} — ${d.profession}, ${d.city}`,
+      source: "/register/candidate",
+      link: { entity: "candidate", id: c.id },
+      actorId: res.user.id,
+      consent: true,
+      details: [
+        ["PEEP ID", pepId],
+        ["Profession", d.profession],
+        ["Talent category", SECTORS.find((x) => x.code === d.sectorCode)?.name ?? d.sectorCode],
+        ["City", d.city],
+        ["Years of experience", int(fd, "yearsExperience") ?? 0],
+        ["Source", str(fd, "source") || "website"],
+      ],
+    });
   } catch (e) {
     if (pendingUserId) await discardUser(pendingUserId);
     return fail(authMessage(e));
@@ -198,6 +218,25 @@ export async function registerEmployer(_: ActionState, fd: FormData): Promise<Ac
     // Signed in only now, so the session already carries the employer role.
     await auth.api.signInEmail({ body: { email: d.email, password: d.password }, headers: await headers() });
     await logActivity(res.user.id, "employer", emp.id, "registered", "Employer self-registered");
+    await recordSubmission({
+      type: "employer_registration",
+      name: d.name,
+      email: d.email,
+      phone: d.phone,
+      organisation: d.company,
+      subject: `${d.company} opened an employer account`,
+      source: "/register/employer",
+      link: { entity: "employer", id: emp.id },
+      actorId: res.user.id,
+      details: [
+        ["Company", d.company],
+        ["Industry", d.industry],
+        ["City", d.city],
+        ["Contact", d.name],
+        ["Their role", d.role],
+        ["CRM stage", "Discovery — welcome call due in 24 hours"],
+      ],
+    });
   } catch (e) {
     if (pendingUserId) await discardUser(pendingUserId);
     return fail(authMessage(e));

@@ -1,11 +1,16 @@
 import Link from "next/link";
-import { COMPANY, DIVISIONS, VERTICALS } from "@/lib/content";
+import { COMPANY, VERTICALS } from "@/lib/content";
+import { AUTO_CHECK, OFFERINGS } from "@/lib/services";
 import { CtaLine } from "./cta-line";
 import { LagosClock } from "./lagos-clock";
 import { LineWordmark } from "./line-wordmark";
 
+/** Only the accounts that actually exist. */
+const SOCIALS = COMPANY.socials.filter((s) => s.href);
+
 const COLUMNS = [
-  { title: "Services", links: DIVISIONS.map((d) => ({ label: d.name, href: `/services/${d.slug}` })) },
+  // Every service PEEPs offers, as the brief asks the footer to list them.
+  { title: "Services", links: OFFERINGS.map((o) => ({ label: o.name, href: o.href })) },
   { title: "Sectors", links: VERTICALS.map((v) => ({ label: v.name, href: `/sectors/${v.slug}` })) },
   {
     title: "Company",
@@ -15,6 +20,7 @@ const COLUMNS = [
       { label: "Partner with us", href: "/partners" },
       { label: "Contact", href: "/contact" },
       { label: "Privacy", href: "/privacy" },
+      { label: "Terms", href: "/terms" },
     ],
   },
 ];
@@ -43,6 +49,7 @@ export function StudioFooter() {
           </div>
           <div className="flex flex-col gap-7">
             <CtaLine href="/employers#request">Request talent</CtaLine>
+            <CtaLine href={AUTO_CHECK.action.href}>Book Auto Check</CtaLine>
             <CtaLine href="/register/candidate">Join the registry</CtaLine>
           </div>
         </div>
@@ -69,7 +76,28 @@ export function StudioFooter() {
                 {COMPANY.phone}
               </a>
             </p>
-            <p className="mt-1.5 text-[1.05rem] text-muted-foreground">{COMPANY.city}</p>
+            {/* The marks a prospective client looks for before they trust a new firm. Each
+                appears only once it has a real value — see COMPANY in src/lib/content.ts. */}
+            <p className="mt-4 text-[1.05rem] leading-snug text-muted-foreground">
+              {COMPANY.address || COMPANY.city}
+            </p>
+            {COMPANY.rcNumber && <p className="label mt-3 text-muted-foreground">RC {COMPANY.rcNumber}</p>}
+            {SOCIALS.length > 0 && (
+              <ul className="mt-5 flex flex-wrap gap-x-5 gap-y-2">
+                {SOCIALS.map((sc) => (
+                  <li key={sc.label}>
+                    <a
+                      href={sc.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="label text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      {sc.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           {COLUMNS.map((col) => (

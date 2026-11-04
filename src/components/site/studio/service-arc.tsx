@@ -7,7 +7,7 @@ import type { MotionValue } from "motion/react";
 import { motion, useMotionValue, useScroll, useTransform } from "motion/react";
 import { useMotionEnv } from "@/components/motion/use-motion-env";
 import { ArtCanvas, type ArtPreset } from "@/components/ui/glass-folder-cards";
-import { STAGES, STAGE_META, type Stage } from "@/lib/quality";
+import { OFFERINGS, type Offering } from "@/lib/services";
 import { cn } from "@/lib/utils";
 import { CtaLine } from "./cta-line";
 
@@ -15,13 +15,16 @@ const spell = (n: number) => ["None", "One", "Two", "Three", "Four", "Five", "Si
 
 type Look = "paper" | "ink" | ArtPreset;
 
-/** One card per stage, then one that leads on to the method. The looks alternate so the run
- *  reads as a set of different pieces of work, not one card repeated. */
-const CARDS: ({ kind: "stage"; stage: Stage; index: number } | { kind: "method" })[] = [
-  ...STAGES.map((stage, index) => ({ kind: "stage" as const, stage, index })),
-  { kind: "method" },
+/** One card per service PEEPs offers, then one that leads on to all of them together. The
+ *  looks alternate so the run reads as a set of different pieces of work, not one card
+ *  repeated. Add a service in src/lib/services.ts and it joins the ring here. */
+const CARDS: ({ kind: "service"; offering: Offering; index: number } | { kind: "all" })[] = [
+  ...OFFERINGS.map((offering, index) => ({ kind: "service" as const, offering, index })),
+  { kind: "all" },
 ];
 const LOOKS: Look[] = ["paper", "ember", "ink", "glacier", "paper", "dusk", "aurora", "ink"];
+/** Wraps, so adding a service past the end of the run still gets a face. */
+const lookFor = (i: number) => LOOKS[i % LOOKS.length];
 
 /** The ring carries the set twice over, so its band never runs out of cards. */
 const RING = [...CARDS.keys(), ...CARDS.keys()];
@@ -102,15 +105,15 @@ const gridCardWidth = (vw: number) => Math.min(340, Math.max(220, vw * 0.215));
 const ringRadius = (vw: number) => ((RING.length * ringCardWidth(vw)) / (2 * Math.PI)) * 1.06;
 
 /**
- * The vetting, after a studio's "design in motion" reel. Two words slide in from opposite edges
- * and cross the frame. Behind them a carousel of the stages rises, swings in and spins past, then
- * tips away through the top; the stages come back as a grid, dropping in from above and rising
- * from below, and dark blinds close over it into the footer.
+ * Everything PEEPs does, after a studio's "design in motion" reel. Two words slide in from
+ * opposite edges and cross the frame. Behind them a carousel of the services rises, swings in
+ * and spins past, then tips away through the top; the services come back as a grid, dropping in
+ * from above and rising from below, and dark blinds close over it into the footer.
  *
  * Driven entirely from the scroll and the viewport size as MotionValues, so scrolling costs no
  * React render: the whole ring is one transform. Without choreography it is the grid.
  */
-export function StageArc() {
+export function ServiceArc() {
   const ref = useRef<HTMLElement>(null);
   const { scrollChoreography: live } = useMotionEnv();
   // From the section's top entering the screen to the end of the pin: the words use all of it.
@@ -146,13 +149,13 @@ export function StageArc() {
 
   if (!live) {
     return (
-      <section ref={ref} aria-labelledby="stages-title" className="py-28">
-        <Words id="stages-title" />
+      <section ref={ref} aria-labelledby="services-title" className="py-28">
+        <Words id="services-title" />
         <p className="label mx-auto mt-10 max-w-[24ch] text-center">{note}</p>
         <ul className="shell mt-16 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {CARDS.map((card, i) => (
             <li key={i} className="aspect-[1/0.72]">
-              <Card card={card} look={LOOKS[i]} />
+              <Card card={card} look={lookFor(i)} />
             </li>
           ))}
         </ul>
@@ -162,20 +165,20 @@ export function StageArc() {
   }
 
   return (
-    <section ref={ref} aria-labelledby="stages-title" className="relative" style={{ height: `${HEIGHT_SVH}svh` }}>
+    <section ref={ref} aria-labelledby="services-title" className="relative" style={{ height: `${HEIGHT_SVH}svh` }}>
       <div className="sticky top-0 h-svh overflow-hidden">
         <div aria-hidden className="pointer-events-none absolute inset-0">
           <p className="mega">
             <motion.span style={{ x: leftX }} className="absolute left-[9vw] top-[33svh] block whitespace-nowrap">
-              From a CV
+              {WORDS[0]}
             </motion.span>
             <motion.span style={{ x: rightX }} className="absolute right-[9vw] top-[52svh] block whitespace-nowrap">
-              to a shortlist
+              {WORDS[1]}
             </motion.span>
           </p>
         </div>
-        <h2 id="stages-title" className="sr-only">
-          From a CV to a shortlist
+        <h2 id="services-title" className="sr-only">
+          {WORDS.join(" ")}
         </h2>
         <motion.p style={{ opacity: noteOpacity }} className="label absolute left-1/2 top-[46svh] w-[34ch] -translate-x-1/2 text-center">
           {note}
@@ -192,7 +195,7 @@ export function StageArc() {
             <Rim vw={vw} offset={1} />
             {RING.map((card, i) => (
               <RingCard key={i} angle={-i * STEP} spin={spin} vw={vw}>
-                <Card card={CARDS[card]} look={LOOKS[card]} />
+                <Card card={CARDS[card]} look={lookFor(card)} />
               </RingCard>
             ))}
           </motion.div>
@@ -207,7 +210,7 @@ export function StageArc() {
         <ul className="absolute inset-0 perspective-[1600px]">
           {CARDS.map((card, i) => (
             <GridCard key={i} slot={i} progress={pin} vw={vw} vh={vh}>
-              <Card card={card} look={LOOKS[i]} />
+              <Card card={card} look={lookFor(i)} />
             </GridCard>
           ))}
         </ul>
@@ -220,13 +223,15 @@ export function StageArc() {
   );
 }
 
-const note = `${spell(STAGES.length)} stages. Each one unlocked only by recorded evidence.`;
+/** The two halves that cross the frame, and the heading a reader without them gets. */
+const WORDS = ["People, payroll", "& peace of mind"] as const;
+const note = `${spell(OFFERINGS.length)} services. One standard of evidence behind all of them.`;
 
 function Words({ id }: { id: string }) {
   return (
     <h2 id={id} className="mega shell">
-      <span className="block">From a CV</span>
-      <span className="block text-right">to a shortlist</span>
+      <span className="block">{WORDS[0]}</span>
+      <span className="block text-right">{WORDS[1]}</span>
     </h2>
   );
 }
@@ -234,10 +239,11 @@ function Words({ id }: { id: string }) {
 function Foot({ className }: { className?: string }) {
   return (
     <div className={cn("shell flex flex-col justify-between gap-8 md:flex-row md:items-end", className)}>
-      <p className="max-w-[30ch] text-[0.95rem] leading-snug">
-        Every candidate climbs the same stages. Each is unlocked only when its evidence is on file.
+      <p className="max-w-[34ch] text-[0.95rem] leading-snug">
+        Hiring, training, advice, payroll, compliance and the mechanic who checks the car. One partner, one point of
+        contact.
       </p>
-      <CtaLine href="/how-we-select">See how we select</CtaLine>
+      <CtaLine href="/services">View all services</CtaLine>
     </div>
   );
 }
@@ -363,7 +369,7 @@ function Blind({ progress, index }: { progress: MotionValue<number>; index: numb
   );
 }
 
-/** A piece of the reel: a stage as one candidate's record shows it, or the way on. */
+/** A piece of the reel: one PEEPs service as its own card, or the way to all of them. */
 function Card({ card, look }: { card: (typeof CARDS)[number]; look: Look }) {
   const art = look !== "paper" && look !== "ink";
   const onDark = look !== "paper";
@@ -380,37 +386,41 @@ function Card({ card, look }: { card: (typeof CARDS)[number]; look: Look }) {
     </>
   ) : null;
 
-  if (card.kind === "method") {
+  if (card.kind === "all") {
     return (
-      <Link href="/how-we-select" className={cn(shell, "group")}>
+      <Link href="/services" className={cn(shell, "group")}>
         {backdrop}
-        <span className="label text-[0.7rem] opacity-70">The method, in full</span>
+        <span className="label text-[0.7rem] opacity-70">Everything PEEPs does</span>
         <span className="flex items-end justify-between gap-3">
-          <span className="font-display text-[1.65rem] leading-[0.95] tracking-[-0.06em]">Read every step.</span>
+          <span className="font-display text-[1.65rem] leading-[0.95] tracking-[-0.06em]">See all services.</span>
           <ArrowRight className="size-5 shrink-0 transition-transform duration-300 group-hover:translate-x-1" aria-hidden />
         </span>
       </Link>
     );
   }
 
-  const meta = STAGE_META[card.stage];
+  const o = card.offering;
   return (
-    <article className={shell}>
+    <Link href={o.href} className={cn(shell, "group")}>
       {backdrop}
       <div className="flex items-center justify-between gap-2 font-mono text-[0.625rem]">
-        <span className="opacity-70">PEEP-ACC-000124</span>
-        <span className="rounded-full border border-current px-2 py-0.5">{meta.short}</span>
+        {/* The card's place in the run. Not a PEP-xxx reference: those are candidate IDs,
+            and a service is not a candidate record. */}
+        <span className="opacity-70">
+          Service {String(card.index + 1).padStart(2, "0")}/{String(OFFERINGS.length).padStart(2, "0")}
+        </span>
+        <span className="rounded-full border border-current px-2 py-0.5">{o.code}</span>
       </div>
       <div>
-        <h3 className="font-display text-[1.65rem] leading-[0.95] tracking-[-0.06em]">{meta.label}.</h3>
-        <p className={cn("mt-2 text-[0.72rem] leading-snug", onDark ? "text-white/75" : "text-[#5c5c60]")}>{meta.description}</p>
-        {/* How far up the stages this record is. */}
-        <div aria-hidden className="mt-3 flex gap-1">
-          {STAGES.map((s, i) => (
-            <span key={s} className={cn("h-0.5 flex-1 rounded-full", i <= card.index ? "bg-current" : "bg-current/20")} />
-          ))}
-        </div>
+        <h3 className="font-display text-[1.65rem] leading-[0.95] tracking-[-0.06em]">{o.short}.</h3>
+        <p className={cn("mt-2 text-[0.72rem] leading-snug", onDark ? "text-white/75" : "text-[#5c5c60]")}>{o.blurb}</p>
+        <p className="label mt-3 flex items-center gap-1.5 text-[0.65rem] opacity-80">
+          {o.action.label}
+          <span aria-hidden className="transition-transform duration-300 group-hover:translate-x-1">
+            →
+          </span>
+        </p>
       </div>
-    </article>
+    </Link>
   );
 }

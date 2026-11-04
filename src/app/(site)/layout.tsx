@@ -2,6 +2,7 @@ import { InteractionProvider } from "@/components/motion/interaction-provider";
 import { SmoothScroll } from "@/components/motion/smooth-scroll";
 import { StudioNav } from "@/components/site/studio/nav";
 import { StudioFooter } from "@/components/site/studio/footer";
+import { WhatsAppButton } from "@/components/site/studio/whatsapp-button";
 
 /** Marketing pages stay static; the header discovers a session client-side. */
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
@@ -17,6 +18,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
         <StudioNav />
         <main id="main">{children}</main>
         <StudioFooter />
+        <WhatsAppButton />
         <SmoothScroll />
       </div>
     </InteractionProvider>

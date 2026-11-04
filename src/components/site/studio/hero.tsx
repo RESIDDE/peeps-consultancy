@@ -12,6 +12,7 @@ import {
   useTransform,
 } from "motion/react";
 import { usePointer } from "@/components/motion/interaction-provider";
+import { HERO_ACTIONS } from "@/lib/services";
 import { takeSnapshot } from "@/components/motion/page-snapshot";
 import { useMotionEnv } from "@/components/motion/use-motion-env";
 import { CtaLine } from "./cta-line";
@@ -164,10 +165,15 @@ export function StudioHero() {
       <Orbits />
 
       <div className="shell relative z-10 pt-32 sm:pt-36">
-        <h1 className="display max-w-[11ch]">Look closer before you hire.</h1>
-        <div className="mt-10 flex flex-wrap gap-x-6 gap-y-4">
-          <CtaLine href="/employers#request">Request talent</CtaLine>
-          <CtaLine href="/how-we-select">See how we select</CtaLine>
+        <p className="label text-muted-foreground">Recruitment · Payroll · Compliance · Auto Check</p>
+        <h1 className="display mt-7 max-w-[13ch]">People, payroll and peace of mind.</h1>
+        {/* The four things a visitor can start here, in the order the brief sets them. */}
+        <div className="mt-10 grid gap-x-12 gap-y-4 sm:grid-cols-2 sm:max-w-[40rem]">
+          {HERO_ACTIONS.map((a) => (
+            <CtaLine key={a.href} href={a.href}>
+              {a.label}
+            </CtaLine>
+          ))}
         </div>
       </div>
 
@@ -215,9 +221,9 @@ export function StudioHero() {
             </div>
             <p className="label flex max-w-[11rem] items-center px-4 text-[0.75rem]">Evidence on every shortlist.</p>
           </div>
-          <p className="mt-6 max-w-[30ch] text-[0.95rem] leading-snug">
-            Recruitment, assessment and workforce development in Nigeria. Every shortlist arrives with the evidence
-            behind each name.
+          <p className="mt-6 max-w-[32ch] text-[0.95rem] leading-snug">
+            Recruitment, payroll, compliance and certified vehicle inspection in Nigeria. Whatever you ask us for, it
+            arrives with the evidence behind it.
           </p>
         </div>
       </div>

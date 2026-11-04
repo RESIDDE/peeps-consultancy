@@ -329,18 +329,60 @@ export const placements = pgTable("placements", {
 /* Operations                                                          */
 /* ------------------------------------------------------------------ */
 
-export const enquiries = pgTable("enquiries", {
-  id: id(),
-  type: text("type").notNull(),
-  name: text("name").notNull(),
-  email: text("email").notNull(),
-  phone: text("phone"),
-  organisation: text("organisation"),
-  subject: text("subject"),
-  message: text("message"),
-  status: text("status").notNull().default("new"),
-  createdAt: createdAt(),
-});
+/**
+ * One answer on a submitted form, kept in the order the form asked it.
+ *
+ * An array rather than an object because Postgres `jsonb` does not preserve key order,
+ * and the console shows these answers back to staff as the visitor filled them in.
+ */
+export interface SubmissionField {
+  label: string;
+  value: string;
+}
+
+/**
+ * Every form filed anywhere on the site lands here, tagged with `type`.
+ *
+ * `src/lib/submissions.ts` owns the tags; `src/server/intake.ts` is the only thing that
+ * writes this table on the public side. Free prose stays in `message`; structured answers
+ * go in `details`, so the console can render them as a table and nothing a visitor typed
+ * is lost in a paragraph.
+ */
+export const enquiries = pgTable(
+  "enquiries",
+  {
+    id: id(),
+    type: text("type").notNull(),
+    name: text("name").notNull(),
+    email: text("email").notNull(),
+    phone: text("phone"),
+    organisation: text("organisation"),
+    subject: text("subject"),
+    message: text("message"),
+    status: text("status").notNull().default("new"),
+    /** The form's answers, label and value, in the order asked. */
+    details: json<SubmissionField[]>("details").notNull().default([]),
+    /** Which page or portal the form was filed on, e.g. "/payroll#quote". */
+    source: text("source"),
+    /** The record this submission created or concerns, for a link straight to it. */
+    entity: text("entity"),
+    entityId: text("entity_id"),
+    /** When what was asked for falls due: an inspection date, a filing deadline. */
+    dueAt: timestamp("due_at", { withTimezone: true }),
+    assignedToId: text("assigned_to_id").references(() => user.id, { onDelete: "set null" }),
+    handledAt: timestamp("handled_at", { withTimezone: true }),
+    /** NDPA 2023 record, for the forms that take a consent tick. */
+    consentAt: timestamp("consent_at", { withTimezone: true }),
+    consentVersion: text("consent_version"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    index("enquiries_type_idx").on(t.type),
+    index("enquiries_status_idx").on(t.status),
+    index("enquiries_created_idx").on(t.createdAt),
+  ],
+);
 
 export const revenueEntries = pgTable("revenue_entries", {
   id: id(),
@@ -387,5 +429,6 @@ export type Application = typeof applications.$inferSelect;
 export type Placement = typeof placements.$inferSelect;
 export type Partner = typeof partners.$inferSelect;
 export type Enquiry = typeof enquiries.$inferSelect;
+export type NewEnquiry = typeof enquiries.$inferInsert;
 export type VerificationCheck = typeof verificationChecks.$inferSelect;
 export type Assessment = typeof assessments.$inferSelect;

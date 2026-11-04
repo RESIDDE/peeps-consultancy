@@ -1,8 +1,9 @@
-import { and, count, desc, eq, gte, inArray, isNotNull, lte, sum } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, isNotNull, lte, ne, sum } from "drizzle-orm";
 import { db } from "@/db";
-import { activityLog, candidates, employers, placements, revenueEntries, user, vacancies } from "@/db/schema";
+import { activityLog, candidates, employers, enquiries, placements, revenueEntries, user, vacancies } from "@/db/schema";
 import { STAGES, stageIndex } from "@/lib/quality";
 import { OPEN_VACANCY_STATUSES, REVENUE_STREAMS } from "@/lib/pipeline";
+import { OPEN_STATUSES } from "@/lib/submissions";
 
 const ACTIVE_CRM = ["pilot", "placement", "retention", "repeat"];
 
@@ -136,3 +137,107 @@ export async function feedbackInsights() {
   return rows.filter((r) => r.feedback);
 }
 
+
+/* ------------------------------------------------------------------ */
+/* The submission inbox                                                */
+/*                                                                     */
+/* What the console needs to show that every form on the site has been  */
+/* received: how many of each, how many unanswered, what arrived last,  */
+/* and which bookings are coming up.                                   */
+/* ------------------------------------------------------------------ */
+
+export interface InboxCounts {
+  /** Per tag: everything ever, and what is still open. */
+  byType: Record<string, { total: number; open: number; unanswered: number }>;
+  /** Submissions sitting at "new" and owing a reply — the sidebar badge. */
+  unanswered: number;
+  /** Everything not closed. */
+  open: number;
+  total: number;
+  /** This calendar month, for the dashboard card. */
+  thisMonth: number;
+  /** Median hours from arrival to somebody picking it up, over the last 50 handled. */
+  medianResponseHours: number | null;
+}
+
+export async function inboxCounts(): Promise<InboxCounts> {
+  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
+  const [rows, monthRows, handled] = await Promise.all([
+    db.select({ type: enquiries.type, status: enquiries.status, n: count() }).from(enquiries).groupBy(enquiries.type, enquiries.status),
+    db.select({ n: count() }).from(enquiries).where(gte(enquiries.createdAt, monthStart)),
+    db
+      .select({ createdAt: enquiries.createdAt, handledAt: enquiries.handledAt })
+      .from(enquiries)
+      .where(isNotNull(enquiries.handledAt))
+      .orderBy(desc(enquiries.createdAt))
+      .limit(50),
+  ]);
+
+  const byType: InboxCounts["byType"] = {};
+  for (const r of rows) {
+    const bucket = (byType[r.type] ??= { total: 0, open: 0, unanswered: 0 });
+    bucket.total += r.n;
+    if (OPEN_STATUSES.includes(r.status)) bucket.open += r.n;
+    if (r.status === "new") bucket.unanswered += r.n;
+  }
+
+  const hours = handled
+    .map((h) => (h.handledAt!.getTime() - h.createdAt.getTime()) / 3_600_000)
+    .filter((h) => h >= 0)
+    .sort((a, b) => a - b);
+
+  return {
+    byType,
+    unanswered: Object.values(byType).reduce((s, b) => s + b.unanswered, 0),
+    open: Object.values(byType).reduce((s, b) => s + b.open, 0),
+    total: Object.values(byType).reduce((s, b) => s + b.total, 0),
+    thisMonth: monthRows[0].n,
+    medianResponseHours: hours.length ? Math.round(hours[Math.floor(hours.length / 2)] * 10) / 10 : null,
+  };
+}
+
+/** The latest arrivals, whatever form they came from. */
+export async function recentSubmissions(limit = 8) {
+  return db
+    .select({
+      id: enquiries.id,
+      type: enquiries.type,
+      name: enquiries.name,
+      organisation: enquiries.organisation,
+      subject: enquiries.subject,
+      status: enquiries.status,
+      createdAt: enquiries.createdAt,
+    })
+    .from(enquiries)
+    .orderBy(desc(enquiries.createdAt))
+    .limit(limit);
+}
+
+/**
+ * Submissions with a date attached that hasn't passed: Auto Check inspections, compliance
+ * deadlines, hiring deadlines. The one view that answers "where does somebody have to be".
+ */
+export async function upcomingBookings(limit = 8) {
+  return db
+    .select({
+      id: enquiries.id,
+      type: enquiries.type,
+      name: enquiries.name,
+      organisation: enquiries.organisation,
+      subject: enquiries.subject,
+      status: enquiries.status,
+      dueAt: enquiries.dueAt,
+      details: enquiries.details,
+    })
+    .from(enquiries)
+    .where(and(isNotNull(enquiries.dueAt), gte(enquiries.dueAt, startOfToday()), ne(enquiries.status, "closed")))
+    .orderBy(enquiries.dueAt)
+    .limit(limit);
+}
+
+function startOfToday(): Date {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}

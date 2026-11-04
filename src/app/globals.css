@@ -205,6 +205,10 @@
   --rule: rgb(58 58 58 / 0.16);
   --accent: #ff3e3e;
   --accent-deep: #c62828;
+  /* PEEPs' own orange, from the brand sheet. Used for exactly one thing on the site: the
+     Book Auto Check button, which the brief asks to be bright orange on every page. */
+  --peeps-orange: #f5821f;
+  --peeps-orange-deep: #d96d0c;
 
   /* The magnifier's instrument face still reads in these. */
   --xray-bg: #0b0c0f;
@@ -463,6 +467,17 @@
   background: var(--nav-fg);
   color: var(--nav-bg);
   border-color: var(--nav-fg);
+}
+/* The one bright-orange mark on the site. It keeps its colour whatever tone the nav is
+   reading beneath it, so it is always the loudest thing in the bar. */
+.studio .pill--auto {
+  background: var(--peeps-orange);
+  border-color: var(--peeps-orange);
+  color: #ffffff;
+}
+.studio .pill--auto:hover {
+  background: var(--peeps-orange-deep);
+  border-color: var(--peeps-orange-deep);
 }
 .studio .nav-dot {
   display: inline-grid;

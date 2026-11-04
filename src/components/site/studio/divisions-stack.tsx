@@ -172,7 +172,7 @@ function Footer({ className }: { className?: string }) {
   return (
     <div className={cn("shell relative z-10 grid items-end gap-6 md:grid-cols-3", className)}>
       <span className="hidden md:block" />
-      <p className="label text-center">✦ Four divisions. One standard of evidence.</p>
+      <p className="label text-center">✦ Four divisions, and payroll, compliance and Auto Check beside them.</p>
       <div className="justify-self-center md:justify-self-end">
         <CtaLine href="/services">View services</CtaLine>
       </div>

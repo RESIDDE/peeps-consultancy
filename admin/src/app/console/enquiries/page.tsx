@@ -1,80 +1,313 @@
 import Link from "next/link";
-import { desc } from "drizzle-orm";
-import { Inbox, Mail, Phone } from "lucide-react";
+import { desc, inArray } from "drizzle-orm";
+import { Inbox, Search } from "lucide-react";
 import { db } from "@/db";
-import { enquiries } from "@/db/schema";
-import { EmptyState, PageHeader } from "@/components/peeps/blocks";
-import { ActionForm } from "@/components/ui/action-form";
-import { AutoSubmitSelect } from "@/components/ui/auto-submit-select";
-import { Badge } from "@/components/ui/badge";
-import { setEnquiryStatus } from "@/server/actions/console";
-import { ENQUIRY_TYPES } from "@/lib/pipeline";
-import { labelOf } from "@/lib/taxonomy";
-import { formatDateTime } from "@/lib/format";
+import { enquiries, user } from "@/db/schema";
+import { EmptyState } from "@/components/peeps/blocks";
+import { PortalPageHeader, PortalPanel, PortalStatCard } from "@/components/portal/portal-kit";
+import { Input } from "@/components/ui/input";
+import { SubmitButton } from "@/components/ui/submit-button";
+import {
+  AssignControl,
+  StatusControl,
+  StatusTag,
+  SubmissionContact,
+  SubmissionDetails,
+  SubmissionLinks,
+  SubmissionTag,
+  submissionIcon,
+} from "@/components/console/submissions";
+import { inboxCounts } from "@/server/metrics";
+import {
+  OPEN_STATUSES,
+  SUBMISSIONS,
+  SUBMISSION_GROUPS,
+  SUBMISSION_STATUSES,
+  submissionMeta,
+  typesInGroup,
+} from "@/lib/submissions";
+import { STAFF } from "@/lib/permissions";
+import { formatDate, formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-export const metadata = { title: "Enquiries" };
+export const metadata = { title: "Inbox" };
 
-const STATUSES = [
-  { value: "new", label: "New" },
-  { value: "in_progress", label: "In progress" },
-  { value: "closed", label: "Closed" },
+/**
+ * Every form filed anywhere on the PEEPs site, in one place.
+ *
+ * The filters are built from the form registry in `lib/submissions.ts`, so a form added
+ * to the site appears here — with its own chip, count and badge — without this page
+ * changing. Nothing is dropped: the "Everything" view really is everything.
+ */
+
+interface Params {
+  status?: string;
+  type?: string;
+  group?: string;
+  q?: string;
+}
+
+/** The named views along the top, before the per-form chips. */
+const VIEWS = [
+  { key: "needs-action", label: "Needs action", note: "New, in progress and scheduled" },
+  { key: "new", label: "New", note: "Nobody has picked these up" },
+  { key: "scheduled", label: "Scheduled", note: "Booked in for a date" },
+  { key: "closed", label: "Closed", note: "Answered or resolved" },
+  { key: "all", label: "Everything", note: "Every form ever filed, including logged activity" },
 ];
 
-export default async function EnquiriesPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
-  const { status = "open" } = await searchParams;
-  const all = await db.select().from(enquiries).orderBy(desc(enquiries.createdAt));
-  const rows = all.filter((e) => (status === "open" ? e.status !== "closed" : status === "all" ? true : e.status === status));
+function matchesView(status: string, view: string) {
+  if (view === "all") return true;
+  if (view === "needs-action") return OPEN_STATUSES.includes(status);
+  return status === view;
+}
+
+export default async function InboxPage({ searchParams }: { searchParams: Promise<Params> }) {
+  const { status: view = "needs-action", type, group, q = "" } = await searchParams;
+
+  const [all, staff, counts] = await Promise.all([
+    db.select().from(enquiries).orderBy(desc(enquiries.createdAt)),
+    db.select({ id: user.id, name: user.name }).from(user).where(inArray(user.role, STAFF)).orderBy(user.name),
+    inboxCounts(),
+  ]);
+
+  const needle = q.trim().toLowerCase();
+  // Only a group the registry actually knows filters anything; a junk value is ignored.
+  const knownGroup = SUBMISSION_GROUPS.find((g) => g.value === group)?.value;
+  const groupTypes = knownGroup ? typesInGroup(knownGroup) : null;
+
+  const rows = all.filter((e) => {
+    if (!matchesView(e.status, view)) return false;
+    if (type && e.type !== type) return false;
+    if (groupTypes && !groupTypes.includes(e.type)) return false;
+    if (!needle) return true;
+    const haystack = [e.name, e.email, e.organisation, e.subject, e.message, e.phone, ...e.details.map((d) => d.value)]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes(needle);
+  });
+
+  /** Keeps the other filters when one of them changes. */
+  const url = (next: Partial<Params>) => {
+    const merged: Params = { status: view, type, group, q, ...next };
+    const sp = new URLSearchParams();
+    for (const [k, v] of Object.entries(merged)) if (v) sp.set(k, String(v));
+    return `/console/enquiries${sp.size ? `?${sp}` : ""}`;
+  };
+
+  /** Only show a chip for a form that has ever been filed, so the row stays readable. */
+  const chips = SUBMISSIONS.filter((s) => (counts.byType[s.value]?.total ?? 0) > 0);
 
   return (
     <>
-      <PageHeader title="Enquiries" description="Talent requests, pilots, partnerships, Academy and career-service requests from the website and portals." />
-      <nav className="mb-4 flex gap-1" aria-label="Enquiry filter">
-        {[
-          ["open", "Open"],
-          ["new", "New"],
-          ["closed", "Closed"],
-          ["all", "All"],
-        ].map(([k, label]) => (
-          <Link key={k} href={`/console/enquiries?status=${k}`} aria-current={status === k ? "page" : undefined} className={cn("rounded-full px-3 py-1.5 text-sm font-medium", status === k ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted")}>
-            {label}
+      <PortalPageHeader
+        label="INBOUND DESK // EVERY FORM FILED ON THE SITE"
+        title="Inbox."
+        lede="Talent requests, payroll quotes, compliance checks, Auto Check bookings, partnerships, career services, registrations and portal activity — every form on the PEEPs site lands here, tagged with the form it came from. Filter by form or search the answers."
+      />
+
+      <div className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <PortalStatCard
+          index={1}
+          label="Awaiting a reply"
+          value={String(counts.unanswered).padStart(2, "0")}
+          note="Submissions still at New that owe somebody an answer."
+          guide="The SLA on every public form is 24 hours. Assign one to yourself to move it to In progress."
+          tone={counts.unanswered > 0 ? "accent" : "default"}
+          href={url({ status: "new", type: undefined, group: undefined })}
+          actionLabel="Open the new ones"
+        />
+        <PortalStatCard index={2} label="Open" value={String(counts.open).padStart(2, "0")} note="New, in progress and scheduled together." tone="default" />
+        <PortalStatCard index={3} label="Received this month" value={String(counts.thisMonth).padStart(2, "0")} note={`${counts.total} since launch, across every form.`} tone="default" />
+        <PortalStatCard
+          index={4}
+          label="Median pick-up"
+          value={counts.medianResponseHours != null ? `${counts.medianResponseHours}h` : "—"}
+          note="Arrival to a consultant picking it up, last 50."
+          guide="Measured from the submission timestamp to the first status change. Target is under 24 hours."
+          tone="default"
+        />
+      </div>
+
+      {/* Views */}
+      <nav className="mb-3 flex flex-wrap gap-1.5" aria-label="Status filter">
+        {VIEWS.map((v) => (
+          <Link
+            key={v.key}
+            href={url({ status: v.key })}
+            title={v.note}
+            aria-current={view === v.key ? "page" : undefined}
+            className={cn(
+              "rounded-[4px] border px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider transition-colors",
+              view === v.key ? "border-foreground bg-foreground text-background" : "border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground",
+            )}
+          >
+            {v.label}
           </Link>
         ))}
       </nav>
+
+      {/* Group filter */}
+      <nav className="mb-3 flex flex-wrap gap-1.5" aria-label="Form group filter">
+        <Link
+          href={url({ group: undefined, type: undefined })}
+          aria-current={!group && !type ? "page" : undefined}
+          className={cn(
+            "rounded-full border px-3 py-1 text-xs transition-colors",
+            !group && !type ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground",
+          )}
+        >
+          All forms
+        </Link>
+        {SUBMISSION_GROUPS.map((g) => (
+          <Link
+            key={g.value}
+            href={url({ group: g.value, type: undefined })}
+            title={g.note}
+            aria-current={group === g.value ? "page" : undefined}
+            className={cn(
+              "rounded-full border px-3 py-1 text-xs transition-colors",
+              group === g.value ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {g.label}
+          </Link>
+        ))}
+      </nav>
+
+      {/* Per-form chips, each with its own count */}
+      <nav className="mb-5 flex flex-wrap gap-1.5" aria-label="Form filter">
+        {chips.map((s) => {
+          const c = counts.byType[s.value];
+          const Icon = submissionIcon(s.value);
+          return (
+            <Link
+              key={s.value}
+              href={url({ type: type === s.value ? undefined : s.value, group: undefined })}
+              title={s.note}
+              aria-current={type === s.value ? "page" : undefined}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-[4px] border px-2.5 py-1 text-xs transition-colors",
+                type === s.value ? "border-foreground bg-muted text-foreground" : "border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground",
+              )}
+            >
+              <Icon className="size-3.5 shrink-0" aria-hidden />
+              <span>{s.label}</span>
+              <span className="font-mono text-[10px] text-muted-foreground">{c.total}</span>
+              {c.unanswered > 0 && (
+                <span className="rounded-[3px] bg-primary px-1 font-mono text-[10px] font-bold leading-tight text-primary-foreground">
+                  {c.unanswered}
+                </span>
+              )}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Search across every answer, not just the subject line */}
+      <form action="/console/enquiries" className="mb-6 flex flex-wrap items-center gap-2">
+        <input type="hidden" name="status" value={view} />
+        {type && <input type="hidden" name="type" value={type} />}
+        {group && <input type="hidden" name="group" value={group} />}
+        <div className="relative min-w-0 flex-1 sm:max-w-sm">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+          <Input
+            name="q"
+            defaultValue={q}
+            placeholder="Search names, companies, answers…"
+            aria-label="Search submissions"
+            className="h-9 pl-9 text-sm"
+          />
+        </div>
+        <SubmitButton size="sm" variant="outline" pendingText="Searching…">
+          Search
+        </SubmitButton>
+        {(q || type || group) && (
+          <Link href={`/console/enquiries?status=${view}`} className="font-mono text-[11px] text-muted-foreground hover:text-foreground">
+            Clear filters
+          </Link>
+        )}
+      </form>
+
+      <p className="mb-4 font-mono text-[11px] text-muted-foreground">
+        {rows.length} {rows.length === 1 ? "submission" : "submissions"}
+        {type ? ` · ${submissionMeta(type).label}` : group ? ` · ${SUBMISSION_GROUPS.find((g) => g.value === group)?.label}` : ""}
+        {q ? ` · matching “${q}”` : ""}
+      </p>
+
       {rows.length === 0 ? (
-        <EmptyState icon={Inbox} title="Inbox zero" body="Nothing waiting here." />
+        <EmptyState
+          icon={Inbox}
+          title={view === "needs-action" ? "Nothing waiting" : "Nothing here"}
+          body={
+            view === "needs-action"
+              ? "Every submission has been picked up. Switch to Everything to see the full record of forms filed."
+              : "No submission matches these filters."
+          }
+        />
       ) : (
-        <ul className="grid gap-3">
-          {rows.map((e) => (
-            <li key={e.id} className={cn("rounded-2xl border bg-card p-5", e.status === "new" && "border-gold/60")}>
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant={e.type === "talent_request" || e.type === "pilot" ? "gold" : "outline"}>{labelOf(ENQUIRY_TYPES, e.type)}</Badge>
-                    {e.status === "new" && <Badge variant="solid">New</Badge>}
-                    <span className="text-xs text-muted-foreground">{formatDateTime(e.createdAt)}</span>
+        <ul className="grid gap-4">
+          {rows.map((e) => {
+            const meta = submissionMeta(e.type);
+            return (
+              <li key={e.id}>
+                <PortalPanel
+                  className={cn(e.status === "new" && "border-primary/50")}
+                  bodyClassName="p-5 sm:p-6"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <SubmissionTag type={e.type} />
+                        <StatusTag status={e.status} />
+                        <span className="font-mono text-[11px] text-muted-foreground">{formatDateTime(e.createdAt)}</span>
+                        {e.dueAt && (
+                          <span className="font-mono text-[11px] text-primary">· due {formatDate(e.dueAt)}</span>
+                        )}
+                      </div>
+                      <h2 className="mt-2.5 font-display text-[1.1rem] leading-snug tracking-[-0.02em]">
+                        <Link href={`/console/enquiries/${e.id}`} className="hover:text-primary">
+                          {e.subject ?? meta.label}
+                        </Link>
+                      </h2>
+                      <p className="mt-0.5 text-sm text-muted-foreground">
+                        {e.name}
+                        {e.organisation ? ` · ${e.organisation}` : ""}
+                      </p>
+                    </div>
+
+                    <div className="flex shrink-0 flex-wrap items-center gap-2">
+                      <AssignControl id={e.id} assignedToId={e.assignedToId} staff={staff} />
+                      <StatusControl id={e.id} status={e.status} />
+                    </div>
                   </div>
-                  <h2 className="mt-2 font-semibold">{e.subject ?? "(no subject)"}</h2>
-                  <p className="text-sm text-muted-foreground">
-                    {e.name}{e.organisation ? ` · ${e.organisation}` : ""}
-                  </p>
-                </div>
-                <ActionForm action={setEnquiryStatus}>
-                  <input type="hidden" name="enquiryId" value={e.id} />
-                  <AutoSubmitSelect name="status" defaultValue={e.status} aria-label="Enquiry status" className="h-8 w-32 text-xs">
-                    {STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-                  </AutoSubmitSelect>
-                </ActionForm>
-              </div>
-              {e.message && <p className="mt-3 whitespace-pre-line text-sm leading-relaxed">{e.message}</p>}
-              <div className="mt-3 flex flex-wrap gap-4 text-xs">
-                <a href={`mailto:${e.email}?subject=${encodeURIComponent(`Re: ${e.subject ?? "Your enquiry"}`)}`} className="inline-flex items-center gap-1 text-primary hover:underline"><Mail className="size-3.5" />{e.email}</a>
-                {e.phone && <a href={`tel:${e.phone.replace(/\s/g, "")}`} className="inline-flex items-center gap-1 text-primary hover:underline"><Phone className="size-3.5" />{e.phone}</a>}
-              </div>
-            </li>
-          ))}
+
+                  <SubmissionDetails details={e.details} message={e.message} className="mt-5" />
+                  <SubmissionContact email={e.email} phone={e.phone} subject={e.subject} className="mt-5" />
+                  <SubmissionLinks entity={e.entity} entityId={e.entityId} source={e.source} className="mt-2.5" />
+
+                  <div className="mt-4 border-t border-border/60 pt-3">
+                    <Link href={`/console/enquiries/${e.id}`} className="font-mono text-[11px] text-primary hover:underline">
+                      Open the full record →
+                    </Link>
+                  </div>
+                </PortalPanel>
+              </li>
+            );
+          })}
         </ul>
       )}
+
+      <p className="mt-10 font-mono text-[11px] leading-relaxed text-muted-foreground">
+        Statuses:{" "}
+        {SUBMISSION_STATUSES.map((s, i) => (
+          <span key={s.value}>
+            {i > 0 && " · "}
+            <strong className="text-foreground">{s.label}</strong> {s.note.toLowerCase()}
+          </span>
+        ))}
+      </p>
     </>
   );
 }

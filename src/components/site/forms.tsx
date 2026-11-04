@@ -133,13 +133,24 @@ export function RequestTalentForm({ defaultPackage = "professional" }: { default
   );
 }
 
+/**
+ * The general-purpose enquiry form, shared by the contact, partners, academy, career
+ * services and division pages.
+ *
+ * `type` is the tag the submission is filed under in the console inbox, and `source` says
+ * which page it was filed on — the two together are how staff tell a partnership enquiry
+ * from the partners page apart from one sent through /contact.
+ */
 export function EnquiryForm({
   type = "contact",
+  source,
   subjectPlaceholder = "How can we help?",
   showOrganisation = true,
   submitLabel = "Send message",
 }: {
-  type?: "contact" | "partner" | "career_service" | "academy" | "professional" | "pilot";
+  type?: "contact" | "partner" | "career_service" | "academy" | "professional" | "recruitment" | "workforce" | "pilot";
+  /** The page the form sits on, e.g. "/academy". Defaults to the tag's own page. */
+  source?: string;
   subjectPlaceholder?: string;
   showOrganisation?: boolean;
   submitLabel?: string;
@@ -148,6 +159,7 @@ export function EnquiryForm({
     <ActionForm action={submitEnquiry} resetOnSuccess className="relative grid gap-4 sm:grid-cols-2">
       <Honeypot />
       <input type="hidden" name="type" value={type} />
+      {source && <input type="hidden" name="source" value={source} />}
       <Field label="Full name" name="name" required>
         <Input id={`${type}-name`} name="name" autoComplete="name" required />
       </Field>

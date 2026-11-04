@@ -20,11 +20,11 @@ const caveat = Caveat({ subsets: ["latin"], variable: "--font-caveat", display: 
 
 export const metadata: Metadata = {
   title: {
-    default: "PEEPs.HR Partners — Verified, assessed, prepared talent",
+    default: "PEEPs.HR Partners — Talent, payroll, compliance and Auto Check",
     template: "%s · PEEPs.HR Partners",
   },
   description:
-    "PEEPs.HR Partners connects organisations with verified, assessed and professionally prepared talent, alongside recruitment, workforce development and business-support services.",
+    "PEEPs.HR Partners connects organisations with verified, assessed and prepared talent, runs payroll and business compliance in Nigeria, and sends certified mechanics to inspect a car before you buy it.",
   metadataBase: new URL(process.env.BETTER_AUTH_URL ?? "http://localhost:3000"),
   openGraph: { siteName: "PEEPs.HR Partners", type: "website", locale: "en_NG" },
 };

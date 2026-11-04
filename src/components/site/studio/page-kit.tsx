@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BlurHeading } from "./blur-heading";
 
@@ -231,6 +231,29 @@ export function Boxes({ items, className }: { items: readonly string[]; classNam
         </li>
       ))}
     </ul>
+  );
+}
+
+/**
+ * Questions set as a ruled list that opens in place. Native <details>, so it works before
+ * JavaScript and a reader's find-in-page still reaches the answers.
+ */
+export function Faqs({ items, className }: { items: readonly { q: string; a: string }[]; className?: string }) {
+  return (
+    <div className={cn("shell", className)}>
+      {items.map((f) => (
+        <details key={f.q} className="hairline group last:border-b [&_summary::-webkit-details-marker]:hidden">
+          <summary className="flex cursor-pointer list-none items-start justify-between gap-8 py-7">
+            <span className="subhead max-w-[30ch] text-[clamp(1.15rem,1.9vw,1.6rem)]">{f.q}</span>
+            <Plus
+              aria-hidden
+              className="mt-1.5 size-5 shrink-0 text-muted-foreground transition-transform duration-300 group-open:rotate-45"
+            />
+          </summary>
+          <p className="max-w-[62ch] pb-8 text-[0.95rem] leading-snug text-muted-foreground">{f.a}</p>
+        </details>
+      ))}
+    </div>
   );
 }
 

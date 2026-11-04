@@ -152,7 +152,7 @@ export default function AcademyPage() {
           title="Sponsor a cohort or enrol your team."
           lede="Tell us about the roles, the headcount and the skills that are missing. A consultant will respond within one working day."
         >
-          <EnquiryForm type="academy" subjectPlaceholder="e.g. Excel & IFRS bootcamp for 12 juniors" />
+          <EnquiryForm type="academy" source="/academy#enquire" subjectPlaceholder="e.g. Excel & IFRS bootcamp for 12 juniors" />
         </FormBlock>
 
         <MoreLinks

@@ -5,8 +5,13 @@ import { useEffect, useRef } from "react";
 const FORMAT = new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Lagos", hour: "2-digit", minute: "2-digit" });
 
 /**
- * The time in Lagos and Abuja. Written into the DOM after mount rather than rendered, so the
- * server's clock and the reader's never have to agree for hydration.
+ * The time in Lagos and Abuja.
+ *
+ * It renders a real time rather than a row of dashes: these pages are prerendered, so the
+ * markup a crawler or a reader without JavaScript sees used to read "WAT → --:--", which
+ * makes a live site look broken. The first render prints the clock as it stands wherever it
+ * runs, hydration is told not to compare the two — they can never agree, and the difference
+ * does not matter — and the effect below corrects it and keeps it ticking.
  */
 export function LagosClock() {
   const ref = useRef<HTMLSpanElement>(null);
@@ -19,8 +24,8 @@ export function LagosClock() {
     return () => window.clearInterval(tick);
   }, []);
   return (
-    <span ref={ref} className="tabular-nums">
-      --:--
+    <span ref={ref} suppressHydrationWarning className="tabular-nums">
+      {FORMAT.format(new Date())}
     </span>
   );
 }

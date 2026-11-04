@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Fraunces, Inter } from "next/font/google";
+import { Familjen_Grotesk, Fraunces, IBM_Plex_Mono, Inter, Inter_Tight } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -10,6 +10,9 @@ const fraunces = Fraunces({
   display: "swap",
 });
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
+const familjen = Familjen_Grotesk({ subsets: ["latin"], variable: "--font-familjen", display: "swap" });
+const interTight = Inter_Tight({ subsets: ["latin"], variable: "--font-inter-tight", display: "swap" });
+const plex = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-plex", display: "swap" });
 
 export const metadata: Metadata = {
   title: { default: "PEEPs Console", template: "%s · PEEPs Console" },
@@ -20,7 +23,12 @@ const themeScript = `(function(){try{var t=localStorage.getItem('peeps-theme');v
 
 export default function AdminRootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en-NG" data-scroll-behavior="smooth" suppressHydrationWarning className={`${fraunces.variable} ${inter.variable}`}>
+    <html
+      lang="en-NG"
+      data-scroll-behavior="smooth"
+      suppressHydrationWarning
+      className={`${fraunces.variable} ${inter.variable} ${familjen.variable} ${interTight.variable} ${plex.variable}`}
+    >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>

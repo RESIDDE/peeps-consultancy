@@ -26,7 +26,7 @@ export default function SectorsPage() {
             </>
           }
           facts={[
-            { value: pad(VERTICALS.length), label: "Talent pools, each assessed on its own terms" },
+            { value: pad(LAUNCHED.length), label: `Talent pools live, each assessed on its own terms. ${VERTICALS.length - LAUNCHED.length} more are growing through partner academies` },
             { value: pad(LAUNCHED.length), label: "Launch verticals, open and recruiting today" },
             { value: pad(ROLE_COUNT), label: "Role types across the pools" },
           ]}

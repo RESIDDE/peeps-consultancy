@@ -13,7 +13,7 @@ import {
   SectionHead,
   Tone,
 } from "@/components/site/studio/page-kit";
-import { PARTNER_TYPES_COPY, VERTICALS } from "@/lib/content";
+import { LIVE_VERTICALS, PARTNER_TYPES_COPY } from "@/lib/content";
 
 export const metadata: Metadata = {
   title: "Partner with PEEPs",
@@ -38,7 +38,7 @@ export default function PartnersPage() {
           }
           facts={[
             { value: pad(PARTNER_TYPES_COPY.length), label: "Kinds of partner in the ecosystem" },
-            { value: pad(VERTICALS.length), label: "Talent pools your graduates can enter" },
+            { value: pad(LIVE_VERTICALS.length), label: "Talent pools your graduates can enter today, with two more opening" },
             { value: "Every", label: "Placement sends feedback back to the curriculum" },
           ]}
         />
@@ -79,7 +79,7 @@ export default function PartnersPage() {
           title="Tell us who you train."
           lede="A consultant will reply within one working day to talk through pipelines, assessment and placement."
         >
-          <EnquiryForm type="partner" subjectPlaceholder="e.g. Graduate pipeline partnership" submitLabel="Start a conversation" />
+          <EnquiryForm type="partner" source="/partners#enquire" subjectPlaceholder="e.g. Graduate pipeline partnership" submitLabel="Start a conversation" />
         </FormBlock>
 
         <MoreLinks

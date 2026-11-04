@@ -8,6 +8,7 @@ import { useMotionEnv } from "@/components/motion/use-motion-env";
 import { ArtCanvas } from "@/components/ui/glass-folder-cards";
 import { VERTICALS } from "@/lib/content";
 import { CHECK_META, STAGES } from "@/lib/quality";
+import { COMPLIANCE_AREAS, PAYROLL } from "@/lib/services";
 import { clamp01 } from "@/lib/scroll-ranges";
 import { cn } from "@/lib/utils";
 
@@ -45,9 +46,21 @@ const FACTS = [
 ] as const;
 
 /**
+ * Why PEEPs: the short trust strip the brief asks for, under the facts. Every line is
+ * something the site can stand behind — client logos and testimonials go in here too, once
+ * PEEPs supplies them.
+ */
+const TRUST = [
+  { title: "Certified mechanics", body: "Every Auto Check inspection is done by a mechanic PEEPs has assessed in the workshop, not just on paper." },
+  { title: "Compliance specialists", body: `Registrations, filings and renewals across ${COMPLIANCE_AREAS.length - 1} regulators, from CAC to NCDMB.` },
+  { title: "Payroll run in full", body: `${PAYROLL.handles.length} things handled every month, remittances included — not the calculation on its own.` },
+  { title: "Evidence, not claims", body: "Nothing on a PEEPs shortlist, report or certificate is said without a record behind it." },
+] as const;
+
+/**
  * Key facts: four cards that tip up into place as they scroll in, their figures rolling over
- * like an odometer. Followed by the sectors, set as a strip where a studio would put its
- * partners' logos.
+ * like an odometer. Then why PEEPs, and the sectors, set as a strip where a studio would put
+ * its partners' logos.
  */
 export function KeyFacts() {
   const grid = useRef<HTMLUListElement>(null);
@@ -58,7 +71,9 @@ export function KeyFacts() {
     <section className="py-28 md:py-44">
       <div className="shell text-center">
         <h2 className="headline">Key facts</h2>
-        <p className="mx-auto mt-6 max-w-[22ch] text-[0.95rem] leading-snug">A snapshot of how every shortlist is made.</p>
+        <p className="mx-auto mt-6 max-w-[24ch] text-[0.95rem] leading-snug">
+          A snapshot of how every shortlist — and every other thing we hand you — is made.
+        </p>
       </div>
 
       <ul
@@ -69,6 +84,18 @@ export function KeyFacts() {
           <FactCard key={fact.label} fact={fact} index={i} progress={scrollYProgress} live={live} />
         ))}
       </ul>
+
+      <div className="shell mx-auto mt-28 max-w-[82rem] md:mt-36">
+        <p className="label text-center">Why PEEPs</p>
+        <ul className="mt-10 grid gap-x-10 gap-y-9 sm:grid-cols-2 xl:grid-cols-4">
+          {TRUST.map((t) => (
+            <li key={t.title} className="hairline pt-5">
+              <h3 className="font-display text-[1.35rem] leading-none tracking-[-0.04em]">{t.title}</h3>
+              <p className="mt-4 max-w-[30ch] text-[0.9rem] leading-snug text-muted-foreground">{t.body}</p>
+            </li>
+          ))}
+        </ul>
+      </div>
 
       <div className="shell mt-28 text-center md:mt-36">
         <p className="label">Sectors we recruit for</p>

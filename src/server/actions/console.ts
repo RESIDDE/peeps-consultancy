@@ -16,6 +16,7 @@ import {
   partners,
   placements,
   revenueEntries,
+  user,
   vacancies,
   verificationChecks,
 } from "@/db/schema";
@@ -38,6 +39,7 @@ import {
 import { ASSESSMENT_TEMPLATES, CLASSIFICATIONS, INTERVIEW_TEMPLATE, isSectorCode, type TemplateKey } from "@/lib/taxonomy";
 import { scoreMatch } from "@/lib/matching";
 import { CONSENT_VERSION } from "@/lib/consent";
+import { SUBMISSION_STATUS_VALUES, statusLabel } from "@/lib/submissions";
 import { logActivity } from "../activity";
 import { loadEvidence, recomputeStage } from "../stage";
 import { issuePepId } from "../pep";
@@ -179,7 +181,7 @@ export const addNote = staffAction(async (fd, actorId) => {
   const entity = str(fd, "entity");
   const entityId = str(fd, "entityId");
   const body = str(fd, "body");
-  if (!["candidate", "employer", "vacancy"].includes(entity) || !entityId) return fail("Invalid note target.");
+  if (!["candidate", "employer", "vacancy", "enquiry"].includes(entity) || !entityId) return fail("Invalid note target.");
   if (body.length < 2) return fail("Write a note first.");
   await db.insert(notes).values({ entity, entityId, body, authorId: actorId });
   return ok("Note added.");
@@ -617,10 +619,69 @@ export const setPartnerStatus = staffAction(async (fd) => {
   return ok("Partner status updated.");
 });
 
-export const setEnquiryStatus = staffAction(async (fd) => {
+/* ------------------------------------------------------------------ */
+/* The submission inbox                                                */
+/*                                                                     */
+/* Every form filed on the site arrives in `enquiries` through          */
+/* `server/intake.ts`. These three actions are how staff work it: move  */
+/* a submission's status, put a name against it, and set the date the   */
+/* thing it asks for happens.                                          */
+/* ------------------------------------------------------------------ */
+
+export const setEnquiryStatus = staffAction(async (fd, actorId) => {
   const enquiryId = str(fd, "enquiryId");
   const status = str(fd, "status");
-  if (!["new", "in_progress", "closed"].includes(status)) return fail("Invalid status.");
-  await db.update(enquiries).set({ status }).where(eq(enquiries.id, enquiryId));
-  return ok(status === "closed" ? "Enquiry closed." : "Enquiry updated.");
+  if (!SUBMISSION_STATUS_VALUES.includes(status)) return fail("Invalid status.");
+  const [before] = await db
+    .select({ status: enquiries.status, handledAt: enquiries.handledAt })
+    .from(enquiries)
+    .where(eq(enquiries.id, enquiryId));
+  if (!before) return fail("Submission not found.");
+  if (before.status === status) return ok("No change.");
+  // `handledAt` is the first time anybody moved it off the mat. Set once and kept, so
+  // later edits don't reset the response time it measures.
+  await db
+    .update(enquiries)
+    .set({ status, handledAt: status === "new" ? null : (before.handledAt ?? new Date()) })
+    .where(eq(enquiries.id, enquiryId));
+  await logActivity(actorId, "enquiry", enquiryId, "status_changed", `${statusLabel(before.status)} → ${statusLabel(status)}`);
+  return ok(status === "closed" ? "Submission closed." : `Moved to ${statusLabel(status)}.`);
+});
+
+export const assignEnquiry = staffAction(async (fd, actorId) => {
+  const enquiryId = str(fd, "enquiryId");
+  const assignedToId = optStr(fd, "assignedToId");
+  if (assignedToId) {
+    const [who] = await db.select({ id: user.id, role: user.role }).from(user).where(eq(user.id, assignedToId));
+    if (!who || !STAFF.includes(who.role)) return fail("Submissions can only be assigned to PEEPs staff.");
+  }
+  const [existing] = await db.select({ handledAt: enquiries.handledAt }).from(enquiries).where(eq(enquiries.id, enquiryId));
+  const handledAt = existing?.handledAt ?? null;
+  const [row] = await db
+    .update(enquiries)
+    .set({ assignedToId, status: assignedToId ? "in_progress" : undefined, handledAt: assignedToId ? (handledAt ?? new Date()) : undefined })
+    .where(eq(enquiries.id, enquiryId))
+    .returning({ id: enquiries.id });
+  if (!row) return fail("Submission not found.");
+  const name = assignedToId
+    ? (await db.select({ name: user.name }).from(user).where(eq(user.id, assignedToId)))[0]?.name
+    : null;
+  await logActivity(actorId, "enquiry", enquiryId, "assigned", name ?? "Unassigned");
+  return ok(name ? `Assigned to ${name}.` : "Assignment cleared.");
+});
+
+/** The date the thing asked for happens: an inspection, a filing deadline, a call. */
+export const setEnquiryDue = staffAction(async (fd, actorId) => {
+  const enquiryId = str(fd, "enquiryId");
+  const dueAt = date(fd, "dueAt");
+  const [before] = await db.select({ handledAt: enquiries.handledAt }).from(enquiries).where(eq(enquiries.id, enquiryId));
+  if (!before) return fail("Submission not found.");
+  const [row] = await db
+    .update(enquiries)
+    .set({ dueAt, status: dueAt ? "scheduled" : undefined, handledAt: before.handledAt ?? new Date() })
+    .where(eq(enquiries.id, enquiryId))
+    .returning({ id: enquiries.id });
+  if (!row) return fail("Submission not found.");
+  await logActivity(actorId, "enquiry", enquiryId, "scheduled", dueAt ? dueAt.toISOString().slice(0, 10) : "cleared");
+  return ok(dueAt ? `Scheduled for ${dueAt.toISOString().slice(0, 10)}.` : "Date cleared.");
 });

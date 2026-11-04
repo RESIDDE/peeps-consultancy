@@ -11,7 +11,7 @@ import {
   Tone,
 } from "@/components/site/studio/page-kit";
 import { WordMarquee } from "@/components/site/studio/word-marquee";
-import { COMPANY, DIVISIONS, LIFECYCLE, ROADMAP, VALUES, VERTICALS } from "@/lib/content";
+import { COMPANY, DIVISIONS, LIFECYCLE, LIVE_VERTICALS, ROADMAP, VALUES } from "@/lib/content";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "About", description: "Vision, mission, values and roadmap of PEEPs.HR Partners." };
@@ -34,7 +34,7 @@ export default function AboutPage() {
           }
           facts={[
             { value: pad(DIVISIONS.length), label: "Divisions, from recruitment to payroll" },
-            { value: pad(VERTICALS.length), label: "Talent pools, each with its own assessment" },
+            { value: pad(LIVE_VERTICALS.length), label: "Talent pools live, each with its own assessment, and two more growing" },
             { value: pad(LIFECYCLE.length), label: "Stages in the model, and the last one feeds the first" },
           ]}
         />

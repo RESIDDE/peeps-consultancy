@@ -16,16 +16,20 @@ const SECTIONS = [
     body: "Candidates: identity and contact details, education, qualifications, employment history, skills, assessment results, references, salary expectations and documents you upload. Employers: organisation and contact details, vacancy information and placement feedback.",
   },
   {
+    title: "Payroll, compliance and Auto Check",
+    body: "Payroll: the staff register you send us — names, salaries, bank details, statutory numbers and deductions — processed on your instruction so we can run your payroll and make the remittances. Compliance: your company details, RC number, industry and the certificates and filings we review or make on your behalf. Auto Check: your name, phone number, email, the vehicle and dealership details you give us, and the inspection report we produce for you. Each form carries its own consent tick, and we use what you send only for the service you asked for.",
+  },
+  {
     title: "Why we use it",
     body: "We use it to assess candidate suitability, match candidates to vacancies, share shortlisted profiles with prospective employers, deliver services you request, and meet legal obligations. Our lawful basis is your consent and the performance of a contract.",
   },
   {
     title: "Who we share it with",
-    body: "We share shortlisted candidate profiles with employers recruiting for a specific vacancy. Contact details are released only when an interview is agreed. We never sell personal data.",
+    body: "We share shortlisted candidate profiles with employers recruiting for a specific vacancy. Contact details are released only when an interview is agreed. For payroll and compliance we share what a regulator, bank or pension administrator requires in order to make a filing or a payment on your instruction. For an Auto Check booking we give the assigned mechanic your name, phone number and where to meet you, and nothing else. We never sell personal data.",
   },
   {
     title: "How long we keep it",
-    body: "We keep candidate profiles while you remain registered, and for up to 24 months after your last activity, unless you ask us to delete them sooner.",
+    body: "We keep candidate profiles while you remain registered, and for up to 24 months after your last activity, unless you ask us to delete them sooner. Payroll and compliance records are kept for as long as Nigerian tax and corporate law requires us to be able to produce them. Auto Check bookings and reports are kept for 24 months, so you can ask us for the report again.",
   },
   {
     title: "Your rights",

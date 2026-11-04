@@ -7,7 +7,8 @@ import { Moon, Sun } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { getLenis } from "@/components/motion/smooth-scroll";
 import { TalentProfileCard } from "@/components/site/talent-profile-card";
-import { COMPANY, DIVISIONS, VERTICALS } from "@/lib/content";
+import { COMPANY, LIVE_VERTICALS, SOON_VERTICALS } from "@/lib/content";
+import { AUTO_CHECK, OFFERINGS } from "@/lib/services";
 import { homeFor } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 import { CtaLine, Roll } from "./cta-line";
@@ -23,12 +24,22 @@ function setTheme(dark: boolean) {
   }
 }
 
-/** Each entry carries a second line, so the menu says what is behind the word. */
+/**
+ * Each entry carries a second line, so the menu says what is behind the word. Services
+ * carries the full list under it — the brief asks for every service to be reachable from
+ * the top menu on every page, and this menu is the top menu.
+ */
 const ITEMS = [
   { href: "/employers", label: "Employers", note: "Request a shortlist" },
   { href: "/candidates", label: "Talent", note: "Join the registry" },
-  { href: "/services", label: "Services", note: `${DIVISIONS.length} divisions` },
-  { href: "/sectors", label: "Sectors", note: `${VERTICALS.length} sectors` },
+  {
+    href: "/services",
+    label: "Services",
+    note: `${OFFERINGS.length} services`,
+    children: OFFERINGS.map((o) => ({ href: o.href, label: o.short })),
+  },
+  // The count says live and growing separately: two of the pools have not launched.
+  { href: "/sectors", label: "Sectors", note: `${LIVE_VERTICALS.length} live, ${SOON_VERTICALS.length} growing` },
   { href: "/how-we-select", label: "Method", note: "How we select" },
   { href: "/contact", label: "Contact", note: "Say hello" },
 ] as const;
@@ -119,8 +130,19 @@ export function StudioNav() {
             <Sun className="hidden size-3.5 dark:block" aria-hidden />
             <Moon className="size-3.5 dark:hidden" aria-hidden />
           </button>
-          <Link href="/employers#request" className="pill pill--solid hidden sm:inline-flex">
+          <Link href="/employers#request" className="pill pill--solid hidden lg:inline-flex">
             <Roll>Request talent</Roll>
+          </Link>
+          {/* The quickest-converting action for an individual, so it stays on every page and
+              every screen size, in PEEPs' orange. The label shortens on a narrow phone so
+              three controls still fit the bar; the accessible name does not change. */}
+          <Link href={AUTO_CHECK.action.href} aria-label="Book Auto Check" className="pill pill--auto">
+            <span className="sm:hidden">
+              <Roll>Auto Check</Roll>
+            </span>
+            <span className="hidden sm:inline-block">
+              <Roll>Book Auto Check</Roll>
+            </span>
           </Link>
           <button
             type="button"
@@ -162,6 +184,26 @@ export function StudioNav() {
                     <span className="menu-word">{item.label}</span>
                     <span className="menu-note label">{item.note}</span>
                   </Link>
+                  {"children" in item && (
+                    <ul className="mb-3 mt-1 flex flex-wrap gap-x-5 gap-y-1.5">
+                      {item.children.map((c) => (
+                        <li key={c.href}>
+                          <Link
+                            href={c.href}
+                            onClick={() => setOpen(false)}
+                            tabIndex={open ? 0 : -1}
+                            aria-current={pathname === c.href ? "page" : undefined}
+                            className={cn(
+                              "label transition-colors duration-300 hover:text-foreground",
+                              pathname === c.href ? "text-foreground" : "text-muted-foreground",
+                            )}
+                          >
+                            {c.label}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </li>
               ))}
             </ul>
@@ -174,8 +216,9 @@ export function StudioNav() {
         </div>
 
         <div className="menu-foot shell">
-          <span onClick={() => setOpen(false)}>
+          <span onClick={() => setOpen(false)} className="flex flex-wrap gap-x-10 gap-y-4">
             <CtaLine href="/employers#request">Request talent</CtaLine>
+            <CtaLine href={AUTO_CHECK.action.href}>Book Auto Check</CtaLine>
           </span>
 
           <div className="label flex flex-col gap-1 normal-case">

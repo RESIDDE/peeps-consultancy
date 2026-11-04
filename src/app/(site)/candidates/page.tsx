@@ -115,6 +115,7 @@ export default function CandidatesPage() {
         >
           <EnquiryForm
             type="career_service"
+            source="/candidates#career-services"
             showOrganisation={false}
             subjectPlaceholder="e.g. CV development, interview preparation"
             submitLabel="Send request"

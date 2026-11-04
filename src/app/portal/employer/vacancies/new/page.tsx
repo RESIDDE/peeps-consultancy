@@ -1,4 +1,4 @@
-import { Panel } from "@/components/peeps/blocks";
+import { PortalPageHeader, PortalPanel } from "@/components/portal/portal-kit";
 import { VacancyFields } from "@/components/peeps/vacancy-fields";
 import { ActionForm, FormMessage } from "@/components/ui/action-form";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -9,18 +9,34 @@ export const metadata = { title: "Request talent" };
 export default function PostVacancyPage() {
   return (
     <>
-      <h1 className="font-display text-3xl font-medium sm:text-4xl">Request talent</h1>
-      <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-        Tell us about the role. Your consultant will call to run a vacancy analysis and agree what success looks like before
-        sourcing begins.
-      </p>
-      <Panel className="mt-8 max-w-4xl">
-        <ActionForm action={postVacancy} className="grid gap-4 sm:grid-cols-2">
+      <PortalPageHeader
+        label="CLIENT MANDATE // SPECIFICATION"
+        title="Request Talent Shortlist"
+        lede="Provide your vacancy requirements. Your designated PEEPs consultant will schedule a vacancy analysis call to calibrate competencies, compensation benchmarks, and timeline before shortlist sourcing commences."
+      />
+
+      <PortalPanel
+        label="JOB SPECIFICATION"
+        title="Role Definition & Parameters"
+        description="Detail headcount, seniority, required competencies, and compensation parameters."
+        className="max-w-4xl"
+      >
+        <ActionForm action={postVacancy} className="grid gap-5 sm:grid-cols-2">
           <VacancyFields />
-          <div className="sm:col-span-2"><FormMessage /></div>
-          <div><SubmitButton size="lg" pendingText="Submitting…">Submit request</SubmitButton></div>
+          <div className="sm:col-span-2">
+            <FormMessage />
+          </div>
+          <div className="pt-2">
+            <SubmitButton
+              size="lg"
+              pendingText="Submitting Request…"
+              className="rounded-[5px] font-mono text-xs uppercase tracking-wider"
+            >
+              Submit Mandate Request
+            </SubmitButton>
+          </div>
         </ActionForm>
-      </Panel>
+      </PortalPanel>
     </>
   );
 }

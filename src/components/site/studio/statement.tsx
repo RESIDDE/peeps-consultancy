@@ -7,8 +7,9 @@ import { useMotionEnv } from "@/components/motion/use-motion-env";
 import { COMPANY } from "@/lib/content";
 import { CtaLine } from "./cta-line";
 
-/** The first clause of the positioning line, which is the whole proposition. */
-const STATEMENT = "PEEPs connects organisations with verified, assessed and professionally prepared talent.";
+/** The proposition, in one line: the four things a business comes to PEEPs for. */
+const STATEMENT =
+  "PEEPs finds your people, pays them on time, keeps your filings current, and checks the car before you buy it.";
 const WORDS = STATEMENT.split(" ");
 
 /** How far a word still to come is dimmed. Present enough to read ahead, faint enough to wait. */
@@ -60,7 +61,8 @@ export function Statement() {
           <div className="max-w-[34ch]">
             <p className="text-[0.95rem] leading-snug">
               We help employers hire on evidence, not on CVs. Every candidate arrives with an assessment report, so
-              identity, qualifications, history and readiness are recorded rather than asserted.
+              identity, qualifications, history and readiness are recorded rather than asserted. The same standard runs
+              through the payroll schedule, the compliance register and the inspection report.
             </p>
             <CtaLine href="/about" className="mt-14">
               More about us

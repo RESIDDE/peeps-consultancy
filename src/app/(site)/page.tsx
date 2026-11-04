@@ -3,15 +3,15 @@ import { StudioHero } from "@/components/site/studio/hero";
 import { HowItWorks } from "@/components/site/studio/how-it-works";
 import { KeyFacts } from "@/components/site/studio/key-facts";
 import { SectorGallery } from "@/components/site/studio/sector-gallery";
-import { StageArc } from "@/components/site/studio/stage-arc";
+import { ServiceArc } from "@/components/site/studio/service-arc";
 import { Statement } from "@/components/site/studio/statement";
 import { WordMarquee } from "@/components/site/studio/word-marquee";
 
 /**
  * The landing page runs in a fixed rhythm of dark and light, whatever the theme: dark for
  * the opening, light for the facts and the sectors, dark for the divisions, light for the
- * method, and the footer closes in dark. Each run sets its tone once, on a wrapper, and the
- * nav reads it to pick its own colours.
+ * method and the services, and the footer closes in dark. Each run sets its tone once, on a
+ * wrapper, and the nav reads it to pick its own colours.
  */
 export default function HomePage() {
   return (
@@ -35,7 +35,7 @@ export default function HomePage() {
 
       <div data-tone="light" className="tone-light wash">
         <HowItWorks />
-        <StageArc />
+        <ServiceArc />
       </div>
     </>
   );

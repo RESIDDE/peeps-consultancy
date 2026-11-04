@@ -1,5 +1,7 @@
 /** Workflow vocabularies shared by the console, portals and seed data. */
 
+import { SUBMISSIONS } from "./submissions";
+
 export const CRM_STAGES = [
   { value: "target", label: "Target", hint: "On the 100-company list" },
   { value: "research", label: "Research", hint: "Decision-makers and needs identified" },
@@ -130,15 +132,16 @@ export const REVENUE_STREAMS = [
   { value: "career_services", label: "Career services" },
 ] as const;
 
-export const ENQUIRY_TYPES = [
-  { value: "talent_request", label: "Talent request" },
-  { value: "pilot", label: "Pilot engagement" },
-  { value: "partner", label: "Partnership" },
-  { value: "career_service", label: "Career service" },
-  { value: "academy", label: "Academy / training" },
-  { value: "professional", label: "Professional services" },
-  { value: "contact", label: "General" },
-] as const;
+/**
+ * The enquiry tags, as a {value,label} list for `labelOf` and the console's selects.
+ *
+ * Derived from the form registry in `lib/submissions.ts`, which is the single place a new
+ * form is declared — so a form added there is labelled everywhere without a second edit.
+ */
+export const ENQUIRY_TYPES: readonly { value: string; label: string }[] = SUBMISSIONS.map((s) => ({
+  value: s.value,
+  label: s.label,
+}));
 
 export const INVOICE_STATUSES = [
   { value: "draft", label: "Draft" },

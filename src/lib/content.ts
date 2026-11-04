@@ -7,11 +7,24 @@ export const COMPANY = {
   name: "PEEPs.HR Partners",
   short: "PEEPs",
   tagline: "Identified. Screened. Assessed. Prepared.",
-  email: "hello@peeps.hr",
-  phone: "+234 800 000 0000",
+  /** The address on the brief and the letterhead. One address everywhere: site, letters, email. */
+  email: "hello@peepsconsultancy.com",
+  phone: "+234 806 486 1039",
   city: "Abuja, Nigeria",
+  /**
+   * Trust marks a prospective client looks for. Each renders only once it holds a value, so
+   * an unfilled one is absent rather than shown as a placeholder. PEEPs to supply:
+   * the street address, the CAC/RC registration number and the social handles.
+   */
+  address: "",
+  rcNumber: "",
+  socials: [
+    { label: "X", href: "" },
+    { label: "Instagram", href: "" },
+    { label: "LinkedIn", href: "" },
+  ] as readonly { label: string; href: string }[],
   positioning:
-    "PEEPs.HR Partners connects organisations with verified, assessed and professionally prepared talent, while providing recruitment, workforce development and business-support services.",
+    "PEEPs.HR Partners connects organisations with verified, assessed and professionally prepared talent, and runs the payroll, compliance and business-support services behind them. For individuals, PEEPs-certified mechanics inspect a car before it is paid for.",
 };
 
 export const LIFECYCLE = [
@@ -165,6 +178,10 @@ export const VERTICALS = [
     assessment: ["Technical ability", "Menu knowledge", "Hygiene", "Practical assessment"],
   },
 ] as const;
+
+/** The pools that are open for business. Two more are growing through partner academies. */
+export const LIVE_VERTICALS = VERTICALS.filter((v) => v.launch);
+export const SOON_VERTICALS = VERTICALS.filter((v) => !v.launch);
 
 export const SELECTION_STEPS = [
   { title: "Registration", body: "Candidates submit their profile, qualifications, experience, desired role, location and salary expectations, and give explicit consent for us to process their data." },

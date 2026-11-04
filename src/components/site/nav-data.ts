@@ -1,4 +1,5 @@
-import { DIVISIONS, VERTICALS } from "@/lib/content";
+import { VERTICALS } from "@/lib/content";
+import { OFFERINGS } from "@/lib/services";
 
 export const NAV = [
   { href: "/employers", label: "For Employers" },
@@ -7,7 +8,7 @@ export const NAV = [
   {
     href: "/services",
     label: "Services",
-    children: DIVISIONS.map((d) => ({ href: `/services/${d.slug}`, label: d.name, hint: d.kicker })),
+    children: OFFERINGS.map((o) => ({ href: o.href, label: o.name, hint: o.kicker })),
   },
   {
     href: "/sectors",

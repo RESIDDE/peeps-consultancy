@@ -25,7 +25,13 @@ export async function generateMetadata({ params }: { params: Promise<{ division:
   return d ? { title: d.name, description: d.summary } : {};
 }
 
-const ENQUIRY_TYPE = { talent: "contact", academy: "academy", professional: "professional", workforce: "contact" } as const;
+/** Each division's enquiries carry their own tag, so the console inbox can tell them apart. */
+const ENQUIRY_TYPE = {
+  talent: "recruitment",
+  academy: "academy",
+  professional: "professional",
+  workforce: "workforce",
+} as const;
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
@@ -78,7 +84,7 @@ export default async function DivisionPage({ params }: { params: Promise<{ divis
             ) : undefined
           }
         >
-          <EnquiryForm type={ENQUIRY_TYPE[d.slug]} subjectPlaceholder={d.services[0].title} />
+          <EnquiryForm type={ENQUIRY_TYPE[d.slug]} source={`/services/${d.slug}#enquire`} subjectPlaceholder={d.services[0].title} />
         </FormBlock>
 
         <MoreLinks
