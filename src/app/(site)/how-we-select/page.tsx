@@ -62,7 +62,7 @@ export default function HowWeSelectPage() {
       </Tone>
 
       <Tone tone="light">
-        <Block>
+        <Block id="steps">
           <SectionHead
             label="Eight steps"
             title="From registration to recommendation."
@@ -74,7 +74,7 @@ export default function HowWeSelectPage() {
       </Tone>
 
       <Tone tone="dark">
-        <Block>
+        <Block id="framework">
           <SectionHead
             label="Candidate Quality Framework"
             title="The standard behind every shortlist."
@@ -85,7 +85,7 @@ export default function HowWeSelectPage() {
       </Tone>
 
       <Tone tone="light">
-        <Block>
+        <Block id="ladder">
           <SectionHead
             label="The quality ladder"
             title="Seven rungs, each gated by evidence."
@@ -98,7 +98,7 @@ export default function HowWeSelectPage() {
       </Tone>
 
       <Tone tone="dark">
-        <Block>
+        <Block id="assessment">
           <SectionHead
             label="Sector-specific assessment"
             title="An accountant's test looks nothing like a mechanic's."

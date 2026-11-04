@@ -463,22 +463,6 @@
     color 0.4s var(--ease-studio),
     border-color 0.4s var(--ease-studio);
 }
-.studio .pill--solid {
-  background: var(--nav-fg);
-  color: var(--nav-bg);
-  border-color: var(--nav-fg);
-}
-/* The one bright-orange mark on the site. It keeps its colour whatever tone the nav is
-   reading beneath it, so it is always the loudest thing in the bar. */
-.studio .pill--auto {
-  background: var(--peeps-orange);
-  border-color: var(--peeps-orange);
-  color: #ffffff;
-}
-.studio .pill--auto:hover {
-  background: var(--peeps-orange-deep);
-  border-color: var(--peeps-orange-deep);
-}
 .studio .nav-dot {
   display: inline-grid;
   place-items: center;
@@ -525,9 +509,11 @@
 }
 .studio .menu-link {
   display: flex;
+  width: 100%;
   align-items: flex-end;
   gap: 1.25rem;
   padding-block: 0.05em;
+  text-align: left;
 }
 .studio .menu-word {
   font-family: var(--font-display);
@@ -539,13 +525,78 @@
 }
 .studio .menu-link:hover .menu-word,
 .studio .menu-link:focus-visible .menu-word,
-.studio .menu-link[aria-current="page"] .menu-word {
+.studio .menu-link[aria-expanded="true"] .menu-word,
+.studio .menu-link[data-active] .menu-word {
   color: var(--ink-1);
 }
 .studio .menu-note {
   padding-bottom: 0.6em;
   white-space: nowrap;
   color: var(--ink-2);
+}
+
+/* ---- the menu's second level ----------------------------------------------- */
+/* Pushed to the end of the row, and lined up with the note rather than the word, so it
+   sits on the same optical line whatever size the display type resolves to. */
+.studio .menu-caret {
+  width: 1rem;
+  height: 1rem;
+  margin-inline-start: auto;
+  margin-bottom: 0.75em;
+  flex-shrink: 0;
+  color: var(--ink-2);
+  transition:
+    transform 0.45s var(--ease-studio),
+    color 0.3s var(--ease-studio);
+}
+.studio .menu-link:hover .menu-caret,
+.studio .menu-caret[data-open] {
+  color: var(--ink-1);
+}
+.studio .menu-caret[data-open] {
+  transform: rotate(180deg);
+}
+
+/* 0fr to 1fr so the list opens to exactly its own height: no measured max-height to keep
+   in step with the number of sub-options. */
+.studio .menu-sub {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.45s var(--ease-studio);
+}
+.studio .menu-sub > div {
+  overflow: hidden;
+}
+.studio .menu-sub[data-open] {
+  grid-template-rows: 1fr;
+}
+.studio .menu-sub__list {
+  display: grid;
+  gap: 0.4rem 2rem;
+  padding-block: 0.75rem 1.25rem;
+  padding-inline-start: 0.15em;
+}
+@media (min-width: 480px) {
+  .studio .menu-sub__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.studio .menu-sub__link {
+  display: inline-block;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+  color: var(--ink-2);
+  transition:
+    color 0.3s var(--ease-studio),
+    transform 0.3s var(--ease-studio);
+}
+.studio .menu-sub__link:hover,
+.studio .menu-sub__link:focus-visible {
+  color: var(--ink-1);
+  transform: translateX(3px);
+}
+.studio .menu-sub__link[aria-current="page"] {
+  color: var(--ink-1);
 }
 .studio .menu-foot {
   position: sticky;

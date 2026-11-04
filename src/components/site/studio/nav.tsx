@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Moon, Sun } from "lucide-react";
+import { ChevronDown, Moon, Sun } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { getLenis } from "@/components/motion/smooth-scroll";
 import { TalentProfileCard } from "@/components/site/talent-profile-card";
-import { COMPANY, LIVE_VERTICALS, SOON_VERTICALS } from "@/lib/content";
+import { COMPANY, LIVE_VERTICALS, SOON_VERTICALS, VERTICALS } from "@/lib/content";
 import { AUTO_CHECK, OFFERINGS } from "@/lib/services";
 import { homeFor } from "@/lib/roles";
 import { cn } from "@/lib/utils";
@@ -24,31 +24,120 @@ function setTheme(dark: boolean) {
   }
 }
 
+interface MenuChild {
+  href: string;
+  label: string;
+}
+
+interface MenuItem {
+  href: string;
+  label: string;
+  /** The second line, so the menu says what is behind the word. */
+  note: string;
+  /**
+   * The sub-options the row opens. The first is always the section's own page, because the
+   * word itself toggles the row rather than navigating — so this is how you still reach it.
+   * Every destination here is a real page or a real anchor on one; nothing is a placeholder.
+   */
+  children: MenuChild[];
+}
+
 /**
- * Each entry carries a second line, so the menu says what is behind the word. Services
- * carries the full list under it — the brief asks for every service to be reachable from
- * the top menu on every page, and this menu is the top menu.
+ * The menu, two levels deep.
+ *
+ * Each row collapses to its word, and opens on hover or on click to show what is under it.
+ * That keeps six rows and twenty-nine destinations legible at once, and it means every
+ * service stays reachable from the top menu on every page, as the brief asks.
  */
-const ITEMS = [
-  { href: "/employers", label: "Employers", note: "Request a shortlist" },
-  { href: "/candidates", label: "Talent", note: "Join the registry" },
+const ITEMS: MenuItem[] = [
+  {
+    href: "/employers",
+    label: "Employers",
+    note: "Request a shortlist",
+    children: [
+      { href: "/employers", label: "For employers" },
+      { href: "/employers#request", label: "Request a shortlist" },
+      { href: "/employers#packages", label: "Recruitment packages" },
+      { href: "/how-we-select", label: "How we select" },
+      { href: "/sign-in", label: "Employer sign-in" },
+    ],
+  },
+  {
+    href: "/candidates",
+    label: "Talent",
+    note: "Join the registry",
+    children: [
+      { href: "/candidates", label: "For talent" },
+      { href: "/register/candidate", label: "Register your profile" },
+      { href: "/candidates#career-services", label: "Career services" },
+      { href: "/academy", label: "PEEPs Academy" },
+      { href: "/sign-in", label: "Candidate sign-in" },
+    ],
+  },
   {
     href: "/services",
     label: "Services",
     note: `${OFFERINGS.length} services`,
-    children: OFFERINGS.map((o) => ({ href: o.href, label: o.short })),
+    children: [
+      { href: "/services", label: "All services" },
+      ...OFFERINGS.map((o) => ({ href: o.href, label: o.short })),
+    ],
   },
-  // The count says live and growing separately: two of the pools have not launched.
-  { href: "/sectors", label: "Sectors", note: `${LIVE_VERTICALS.length} live, ${SOON_VERTICALS.length} growing` },
-  { href: "/how-we-select", label: "Method", note: "How we select" },
-  { href: "/contact", label: "Contact", note: "Say hello" },
-] as const;
+  {
+    href: "/sectors",
+    // The count says live and growing separately: two of the pools have not launched.
+    label: "Sectors",
+    note: `${LIVE_VERTICALS.length} live, ${SOON_VERTICALS.length} growing`,
+    children: [
+      { href: "/sectors", label: "All sectors" },
+      ...VERTICALS.map((v) => ({ href: `/sectors/${v.slug}`, label: v.name })),
+    ],
+  },
+  {
+    href: "/how-we-select",
+    label: "Method",
+    note: "How we select",
+    children: [
+      { href: "/how-we-select", label: "The method in full" },
+      { href: "/how-we-select#steps", label: "The eight steps" },
+      { href: "/how-we-select#framework", label: "Quality framework" },
+      { href: "/how-we-select#ladder", label: "The quality ladder" },
+      { href: "/how-we-select#assessment", label: "Sector assessment" },
+    ],
+  },
+  {
+    href: "/contact",
+    label: "Contact",
+    note: "Say hello",
+    children: [
+      { href: "/contact", label: "Contact PEEPs" },
+      { href: "/contact#message", label: "Send a message" },
+      { href: "/partners", label: "Partnerships" },
+      { href: "/about", label: "About PEEPs" },
+    ],
+  },
+];
 
 export function StudioNav() {
   const pathname = usePathname();
   const header = useRef<HTMLElement>(null);
   const [open, setOpen] = useState(false);
   const [accountHref, setAccountHref] = useState<string | null>(null);
+  /**
+   * Which menu row is showing its sub-options. Two pieces of state rather than one so
+   * hover and click never fight: a click pins a row open, a mouse passing over another
+   * previews it, and leaving the list falls back to whatever was pinned.
+   */
+  const [pinned, setPinned] = useState<string | null>(null);
+  const [hovered, setHovered] = useState<string | null>(null);
+  const openRow = hovered ?? pinned;
+
+  /** Closing forgets which row was open, so the menu never reopens half-unfolded. */
+  const closeMenu = useCallback(() => {
+    setOpen(false);
+    setPinned(null);
+    setHovered(null);
+  }, []);
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -74,10 +163,10 @@ export function StudioNav() {
 
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && closeMenu();
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open]);
+  }, [open, closeMenu]);
 
   // The nav takes its colours from whatever is beneath it: a section's fixed tone where it
   // has one, the theme where it does not. Sampled at the nav's own height, once a frame at
@@ -114,7 +203,7 @@ export function StudioNav() {
   return (
     <>
       <header ref={header} className="studio-nav" data-tone="dark">
-        <Link href="/" aria-label={`${COMPANY.name} home`} onClick={() => setOpen(false)}>
+        <Link href="/" aria-label={`${COMPANY.name} home`} onClick={closeMenu}>
           <Logo />
         </Link>
 
@@ -130,23 +219,12 @@ export function StudioNav() {
             <Sun className="hidden size-3.5 dark:block" aria-hidden />
             <Moon className="size-3.5 dark:hidden" aria-hidden />
           </button>
-          <Link href="/employers#request" className="pill pill--solid hidden lg:inline-flex">
-            <Roll>Request talent</Roll>
-          </Link>
-          {/* The quickest-converting action for an individual, so it stays on every page and
-              every screen size, in PEEPs' orange. The label shortens on a narrow phone so
-              three controls still fit the bar; the accessible name does not change. */}
-          <Link href={AUTO_CHECK.action.href} aria-label="Book Auto Check" className="pill pill--auto">
-            <span className="sm:hidden">
-              <Roll>Auto Check</Roll>
-            </span>
-            <span className="hidden sm:inline-block">
-              <Roll>Book Auto Check</Roll>
-            </span>
-          </Link>
+          {/* The bar carries nothing else. Request talent and Book Auto Check now live in
+              the menu — in its footer and under Employers and Services — so the header
+              stays two controls wide at every size and the logo keeps the room. */}
           <button
             type="button"
-            onClick={() => setOpen((o) => !o)}
+            onClick={() => (open ? closeMenu() : setOpen(true))}
             aria-expanded={open}
             aria-controls="studio-menu"
             className="pill"
@@ -170,42 +248,66 @@ export function StudioNav() {
         aria-hidden={!open}
       >
         <div className="shell grid h-full grid-cols-1 content-start gap-12 pb-44 pt-32 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16 lg:pt-40">
-          <nav aria-label="Main">
+          <nav aria-label="Main" onMouseLeave={() => setHovered(null)}>
             <ul>
-              {ITEMS.map((item, i) => (
-                <li key={item.href} className="menu-row" style={{ "--i": i } as React.CSSProperties}>
-                  <Link
-                    href={item.href}
-                    onClick={() => setOpen(false)}
-                    tabIndex={open ? 0 : -1}
-                    aria-current={pathname === item.href ? "page" : undefined}
-                    className="menu-link"
+              {ITEMS.map((item, i) => {
+                const expanded = openRow === item.href;
+                const subId = `menu-sub-${item.label.toLowerCase()}`;
+                return (
+                  <li
+                    key={item.href}
+                    className="menu-row"
+                    style={{ "--i": i } as React.CSSProperties}
+                    // A mouse opens the row on the way past; a finger does not, because on
+                    // touch the same gesture is the tap that opens it deliberately.
+                    onPointerEnter={(e) => {
+                      if (e.pointerType === "mouse") setHovered(item.href);
+                    }}
                   >
-                    <span className="menu-word">{item.label}</span>
-                    <span className="menu-note label">{item.note}</span>
-                  </Link>
-                  {"children" in item && (
-                    <ul className="mb-3 mt-1 flex flex-wrap gap-x-5 gap-y-1.5">
-                      {item.children.map((c) => (
-                        <li key={c.href}>
-                          <Link
-                            href={c.href}
-                            onClick={() => setOpen(false)}
-                            tabIndex={open ? 0 : -1}
-                            aria-current={pathname === c.href ? "page" : undefined}
-                            className={cn(
-                              "label transition-colors duration-300 hover:text-foreground",
-                              pathname === c.href ? "text-foreground" : "text-muted-foreground",
-                            )}
-                          >
-                            {c.label}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </li>
-              ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPinned((p) => (p === item.href ? null : item.href));
+                        setHovered(null);
+                      }}
+                      tabIndex={open ? 0 : -1}
+                      aria-expanded={expanded}
+                      aria-controls={subId}
+                      className="menu-link"
+                      data-active={pathname === item.href || undefined}
+                    >
+                      <span className="menu-word">{item.label}</span>
+                      <span className="menu-note label">{item.note}</span>
+                      <span aria-hidden className="menu-caret" data-open={expanded || undefined}>
+                        <ChevronDown className="size-full" />
+                      </span>
+                    </button>
+
+                    <div id={subId} className="menu-sub" data-open={expanded || undefined} aria-hidden={!expanded}>
+                      {/* The inner wrapper is what overflow hides: the grid row animates from
+                          0fr to 1fr, so the list opens to its own height without a magic number. */}
+                      <div>
+                        <ul className="menu-sub__list">
+                          {item.children.map((c) => (
+                            <li key={`${item.href}${c.href}`}>
+                              <Link
+                                href={c.href}
+                                onClick={closeMenu}
+                                // Not reachable by tab while the row is folded away.
+                                tabIndex={open && expanded ? 0 : -1}
+                                aria-current={pathname === c.href ? "page" : undefined}
+                                className="menu-sub__link"
+                              >
+                                {c.label}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           </nav>
 
@@ -216,7 +318,7 @@ export function StudioNav() {
         </div>
 
         <div className="menu-foot shell">
-          <span onClick={() => setOpen(false)} className="flex flex-wrap gap-x-10 gap-y-4">
+          <span onClick={closeMenu} className="flex flex-wrap gap-x-10 gap-y-4">
             <CtaLine href="/employers#request">Request talent</CtaLine>
             <CtaLine href={AUTO_CHECK.action.href}>Book Auto Check</CtaLine>
           </span>
