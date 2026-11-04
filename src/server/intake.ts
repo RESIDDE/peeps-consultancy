@@ -65,6 +65,29 @@ export interface RecordedSubmission {
   label: string;
 }
 
+/**
+ * `recordSubmission()` for the places where the submission is *secondary* — the real work
+ * (an account created, a vacancy posted, feedback saved) is already committed, and the
+ * inbox entry is a notification about it.
+ *
+ * Those callers must not fail because the inbox write did. A registration that creates the
+ * account, saves the profile and signs the person in, then reports failure because a
+ * notification row did not insert, is worse than a missing inbox entry: the person tries
+ * again and is told their email is taken. So this logs and swallows.
+ *
+ * Forms where the submission *is* the deliverable — a payroll quote, a contact message —
+ * use `recordSubmission()` and let the error surface, because there the sender needs to
+ * know nothing was saved.
+ */
+export async function recordSubmissionQuietly(input: SubmissionInput): Promise<RecordedSubmission | null> {
+  try {
+    return await recordSubmission(input);
+  } catch (e) {
+    console.error(`[intake] could not record a ${input.type} submission; the primary record is unaffected`, e);
+    return null;
+  }
+}
+
 export async function recordSubmission(input: SubmissionInput): Promise<RecordedSubmission> {
   const meta = submissionMeta(input.type);
   const details = toFields(input.details);

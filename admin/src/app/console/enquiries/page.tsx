@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { desc, inArray } from "drizzle-orm";
+import { and, count, desc, eq, ilike, inArray, or, sql, type SQL } from "drizzle-orm";
 import { Inbox, Search } from "lucide-react";
 import { db } from "@/db";
 import { enquiries, user } from "@/db/schema";
@@ -45,7 +45,17 @@ interface Params {
   type?: string;
   group?: string;
   q?: string;
+  page?: string;
 }
+
+/**
+ * How many submissions a page shows.
+ *
+ * This table now holds every form filed on the site, including the high-volume ones —
+ * job applications, profile revisions, registrations — so the page filters and pages in
+ * SQL rather than reading the table and sifting it in memory.
+ */
+const PER_PAGE = 50;
 
 /** The named views along the top, before the per-form chips. */
 const VIEWS = [
@@ -56,41 +66,57 @@ const VIEWS = [
   { key: "all", label: "Everything", note: "Every form ever filed, including logged activity" },
 ];
 
-function matchesView(status: string, view: string) {
-  if (view === "all") return true;
-  if (view === "needs-action") return OPEN_STATUSES.includes(status);
-  return status === view;
+/** The status part of the query for a named view. */
+function viewFilter(view: string): SQL | undefined {
+  if (view === "all") return undefined;
+  if (view === "needs-action") return inArray(enquiries.status, [...OPEN_STATUSES]);
+  return eq(enquiries.status, view);
 }
 
 export default async function InboxPage({ searchParams }: { searchParams: Promise<Params> }) {
-  const { status: view = "needs-action", type, group, q = "" } = await searchParams;
+  const { status: view = "needs-action", type, group, q = "", page: pageParam } = await searchParams;
+  const page = Math.max(0, Number(pageParam) || 0);
 
-  const [all, staff, counts] = await Promise.all([
-    db.select().from(enquiries).orderBy(desc(enquiries.createdAt)),
+  // Only a group the registry actually knows filters anything; a junk value is ignored.
+  const knownGroup = SUBMISSION_GROUPS.find((g) => g.value === group)?.value;
+  const groupTypes = knownGroup ? typesInGroup(knownGroup) : null;
+  const needle = q.trim();
+
+  const where = and(
+    viewFilter(view),
+    type ? eq(enquiries.type, type) : undefined,
+    groupTypes ? inArray(enquiries.type, groupTypes) : undefined,
+    // Searches the answers as well as the contact fields: `details` is cast to text so a
+    // value a visitor typed into any field on any form is findable.
+    needle
+      ? or(
+          ilike(enquiries.name, `%${needle}%`),
+          ilike(enquiries.email, `%${needle}%`),
+          ilike(enquiries.organisation, `%${needle}%`),
+          ilike(enquiries.subject, `%${needle}%`),
+          ilike(enquiries.message, `%${needle}%`),
+          ilike(enquiries.phone, `%${needle}%`),
+          sql`${enquiries.details}::text ilike ${`%${needle}%`}`,
+        )
+      : undefined,
+  );
+
+  const [rows, [{ total }], staff, counts] = await Promise.all([
+    db
+      .select()
+      .from(enquiries)
+      .where(where)
+      .orderBy(desc(enquiries.createdAt))
+      .limit(PER_PAGE)
+      .offset(page * PER_PAGE),
+    db.select({ total: count() }).from(enquiries).where(where),
     db.select({ id: user.id, name: user.name }).from(user).where(inArray(user.role, STAFF)).orderBy(user.name),
     inboxCounts(),
   ]);
 
-  const needle = q.trim().toLowerCase();
-  // Only a group the registry actually knows filters anything; a junk value is ignored.
-  const knownGroup = SUBMISSION_GROUPS.find((g) => g.value === group)?.value;
-  const groupTypes = knownGroup ? typesInGroup(knownGroup) : null;
-
-  const rows = all.filter((e) => {
-    if (!matchesView(e.status, view)) return false;
-    if (type && e.type !== type) return false;
-    if (groupTypes && !groupTypes.includes(e.type)) return false;
-    if (!needle) return true;
-    const haystack = [e.name, e.email, e.organisation, e.subject, e.message, e.phone, ...e.details.map((d) => d.value)]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase();
-    return haystack.includes(needle);
-  });
-
-  /** Keeps the other filters when one of them changes. */
+  /** Keeps the other filters when one of them changes, and goes back to the first page. */
   const url = (next: Partial<Params>) => {
-    const merged: Params = { status: view, type, group, q, ...next };
+    const merged: Params = { status: view, type, group, q, page: undefined, ...next };
     const sp = new URLSearchParams();
     for (const [k, v] of Object.entries(merged)) if (v) sp.set(k, String(v));
     return `/console/enquiries${sp.size ? `?${sp}` : ""}`;
@@ -231,7 +257,11 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
       </form>
 
       <p className="mb-4 font-mono text-[11px] text-muted-foreground">
-        {rows.length} {rows.length === 1 ? "submission" : "submissions"}
+        {total === 0
+          ? "No submissions"
+          : total <= PER_PAGE
+            ? `${total} ${total === 1 ? "submission" : "submissions"}`
+            : `Showing ${page * PER_PAGE + 1}–${page * PER_PAGE + rows.length} of ${total}`}
         {type ? ` · ${submissionMeta(type).label}` : group ? ` · ${SUBMISSION_GROUPS.find((g) => g.value === group)?.label}` : ""}
         {q ? ` · matching “${q}”` : ""}
       </p>
@@ -297,6 +327,34 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
             );
           })}
         </ul>
+      )}
+
+      {total > PER_PAGE && (
+        <nav className="mt-8 flex items-center justify-between gap-4" aria-label="Pagination">
+          {page > 0 ? (
+            <Link
+              href={url({ page: String(page - 1) })}
+              className="rounded-[4px] border border-border px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-foreground transition-colors hover:border-foreground/40"
+            >
+              ← Newer
+            </Link>
+          ) : (
+            <span />
+          )}
+          <span className="font-mono text-[11px] text-muted-foreground">
+            Page {page + 1} of {Math.ceil(total / PER_PAGE)}
+          </span>
+          {(page + 1) * PER_PAGE < total ? (
+            <Link
+              href={url({ page: String(page + 1) })}
+              className="rounded-[4px] border border-border px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-foreground transition-colors hover:border-foreground/40"
+            >
+              Older →
+            </Link>
+          ) : (
+            <span />
+          )}
+        </nav>
       )}
 
       <p className="mt-10 font-mono text-[11px] leading-relaxed text-muted-foreground">

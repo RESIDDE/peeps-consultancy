@@ -52,7 +52,8 @@ export default async function ServiceDeskPage({ searchParams }: { searchParams: 
   const current = SERVICES.find((s) => s.key === active)!;
 
   const [rows, staff, allServiceRows] = await Promise.all([
-    db.select().from(enquiries).where(eq(enquiries.type, current.type)).orderBy(desc(enquiries.createdAt)),
+    // Capped: the desk is for working the current queue, and the inbox holds the archive.
+    db.select().from(enquiries).where(eq(enquiries.type, current.type)).orderBy(desc(enquiries.createdAt)).limit(200),
     db.select({ id: user.id, name: user.name }).from(user).where(inArray(user.role, STAFF)).orderBy(user.name),
     db
       .select({ id: enquiries.id, type: enquiries.type, status: enquiries.status, dueAt: enquiries.dueAt })

@@ -11,7 +11,7 @@ import { scoreMatch } from "@/lib/matching";
 import { PACKAGES, SHORTLISTED_OR_LATER } from "@/lib/pipeline";
 import { EMPLOYMENT_TYPES, isSectorCode, labelOf } from "@/lib/taxonomy";
 import { logActivity } from "../activity";
-import { recordSubmission } from "../intake";
+import { recordSubmission, recordSubmissionQuietly } from "../intake";
 import { applyProfileUpdate } from "../profile";
 import { date, int, list, optStr, str } from "../forms";
 
@@ -61,7 +61,7 @@ export const updateMyProfile = guard(async (_: ActionState, fd: FormData) => {
   await logActivity(session.user.id, "candidate", candidate.id, "profile_updated", "Updated by candidate");
   // Logged rather than flagged: staff need to know the dossier moved under them — a
   // verified qualification can be stale after an edit — but it owes nobody a reply.
-  await recordSubmission({
+  await recordSubmissionQuietly({
     type: "profile_update",
     name: `${candidate.firstName} ${candidate.lastName}`,
     email: candidate.email,
@@ -95,7 +95,7 @@ export const applyToVacancy = guard(async (_: ActionState, fd: FormData) => {
   await logActivity(session.user.id, "application", inserted[0].id, "applied", `${candidate.pepId} → ${v.ref}`);
 
   const [employer] = await db.select({ name: employers.name }).from(employers).where(eq(employers.id, v.employerId));
-  await recordSubmission({
+  await recordSubmissionQuietly({
     type: "job_application",
     name: `${candidate.firstName} ${candidate.lastName}`,
     email: candidate.email,
@@ -124,6 +124,8 @@ export const requestCareerService = guard(async (_: ActionState, fd: FormData) =
   const service = str(fd, "service");
   const message = str(fd, "message");
   if (!service) return fail("Choose a service.");
+  // Not the quiet variant: this submission is the whole action, so a failed write has to
+  // reach the candidate rather than telling them a request was sent that was not.
   await recordSubmission({
     type: "career_service",
     name: `${candidate.firstName} ${candidate.lastName}`,
@@ -185,7 +187,7 @@ export const postVacancy = guard(async (_: ActionState, fd: FormData) => {
     .select({ name: employerContacts.name, email: employerContacts.email, phone: employerContacts.phone })
     .from(employerContacts)
     .where(eq(employerContacts.userId, session.user.id));
-  await recordSubmission({
+  await recordSubmissionQuietly({
     type: "talent_request",
     name: me?.name ?? session.user.name,
     email: me?.email ?? session.user.email,
@@ -249,7 +251,7 @@ export const respondToCandidate = guard(async (_: ActionState, fd: FormData) => 
   await logActivity(session.user.id, "application", applicationId, "employer_response", decision);
 
   const [company] = await db.select({ name: employers.name }).from(employers).where(eq(employers.id, employerId));
-  await recordSubmission({
+  await recordSubmissionQuietly({
     type: "employer_decision",
     name: session.user.name,
     email: session.user.email,
@@ -299,7 +301,7 @@ export const submitPlacementFeedback = guard(async (_: ActionState, fd: FormData
     .innerJoin(vacancies, eq(vacancies.id, placements.vacancyId))
     .innerJoin(candidates, eq(candidates.id, placements.candidateId))
     .where(eq(placements.id, placementId));
-  await recordSubmission({
+  await recordSubmissionQuietly({
     type: "placement_feedback",
     name: session.user.name,
     email: session.user.email,

@@ -14,7 +14,7 @@ import { isSectorCode, SECTORS } from "@/lib/taxonomy";
 import { CONSENT_VERSION } from "@/lib/consent";
 import { issuePepId } from "../pep";
 import { logActivity } from "../activity";
-import { recordSubmission } from "../intake";
+import { recordSubmissionQuietly } from "../intake";
 import { fieldErrors, int, str, zEmail, zPhone, zRequired } from "../forms";
 
 const password = z.string().min(8, "Use at least 8 characters").max(128);
@@ -129,7 +129,7 @@ export async function registerCandidate(_: ActionState, fd: FormData): Promise<A
     pendingUserId = null;
     await auth.api.signInEmail({ body: { email: d.email, password: d.password }, headers: await headers() });
     await logActivity(res.user.id, "candidate", c.id, "registered", `Self-registered as ${pepId}`);
-    await recordSubmission({
+    await recordSubmissionQuietly({
       type: "candidate_registration",
       name: `${d.firstName} ${d.lastName}`,
       email: d.email,
@@ -218,7 +218,7 @@ export async function registerEmployer(_: ActionState, fd: FormData): Promise<Ac
     // Signed in only now, so the session already carries the employer role.
     await auth.api.signInEmail({ body: { email: d.email, password: d.password }, headers: await headers() });
     await logActivity(res.user.id, "employer", emp.id, "registered", "Employer self-registered");
-    await recordSubmission({
+    await recordSubmissionQuietly({
       type: "employer_registration",
       name: d.name,
       email: d.email,

@@ -112,3 +112,42 @@ describe("what the server actually files", () => {
     }
   });
 });
+
+/**
+ * Which variant each call site uses is a correctness rule, not a style choice.
+ *
+ * Where the submission is the whole deliverable (a payroll quote, a contact message, a
+ * career-service request) a failed write has to reach the sender, so the throwing
+ * `recordSubmission` is right. Where the real work is already committed — an account
+ * created and signed in, a vacancy posted, feedback saved — the inbox entry is a
+ * notification about it, and failing the whole action over it is worse than a missing
+ * row: the person retries and is told their email is already taken.
+ */
+describe("intake call-site discipline", () => {
+  const read = (file: string) => readFileSync(new URL(`../../${file}`, import.meta.url), "utf8");
+  /** Counts `await recordSubmission({` but not `await recordSubmissionQuietly({`. */
+  const throwing = (src: string) => src.match(/await recordSubmission\(\{/g)?.length ?? 0;
+  const quiet = (src: string) => src.match(/await recordSubmissionQuietly\(\{/g)?.length ?? 0;
+
+  it("lets every public form surface a failed write to the sender", () => {
+    const src = read("src/server/actions/public.ts");
+    expect(throwing(src)).toBeGreaterThan(0);
+    expect(quiet(src)).toBe(0);
+  });
+
+  it("never fails a registration because the inbox write failed", () => {
+    const src = read("src/server/actions/auth.ts");
+    // The account, profile and sign-in are already committed by this point.
+    expect(throwing(src)).toBe(0);
+    expect(quiet(src)).toBe(2);
+  });
+
+  it("keeps the career-service request loud and the rest of the portal quiet", () => {
+    const src = read("src/server/actions/portal.ts");
+    expect(throwing(src)).toBe(1);
+    expect(quiet(src)).toBeGreaterThan(0);
+    // The one that throws is the one with no other record behind it.
+    const loud = src.slice(src.indexOf("await recordSubmission({"));
+    expect(loud.slice(0, 200)).toContain('type: "career_service"');
+  });
+});
