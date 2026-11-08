@@ -2,11 +2,14 @@
   "name": "peeps-admin",
   "version": "0.1.0",
   "private": true,
-  "description": "PEEPs staff console. Shares src/ and node_modules with the main site in the parent folder.",
+  "description": "PEEPs staff console. Shares src/ and node_modules with the main site in the parent folder: install from the parent (npm ci at the repo root), never in here. `next` is listed only so hosts like Vercel detect the framework; it resolves to the parent copy.",
   "scripts": {
     "dev": "next dev -p 3001",
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "^16.3.8"
   }
 }
