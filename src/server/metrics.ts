@@ -214,6 +214,23 @@ export async function recentSubmissions(limit = 8) {
     .limit(limit);
 }
 
+/** The oldest forms still at New: the ones somebody owes a reply, longest-waiting first. */
+export async function awaitingReply(limit = 6) {
+  return db
+    .select({
+      id: enquiries.id,
+      type: enquiries.type,
+      name: enquiries.name,
+      organisation: enquiries.organisation,
+      subject: enquiries.subject,
+      createdAt: enquiries.createdAt,
+    })
+    .from(enquiries)
+    .where(eq(enquiries.status, "new"))
+    .orderBy(enquiries.createdAt)
+    .limit(limit);
+}
+
 /**
  * Submissions with a date attached that hasn't passed: Auto Check inspections, compliance
  * deadlines, hiring deadlines. The one view that answers "where does somebody have to be".

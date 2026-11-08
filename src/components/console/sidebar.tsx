@@ -10,7 +10,6 @@ import {
   Inbox,
   LayoutDashboard,
   Menu,
-  LifeBuoy,
   Users,
   Wallet,
   X,
@@ -21,12 +20,9 @@ import { LagosClock } from "@/components/site/studio/lagos-clock";
 import { initials } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-const pad = (n: number) => String(n).padStart(2, "0");
-
 const NAV = [
   { href: "/console", label: "Overview", icon: LayoutDashboard, exact: true },
-  { href: "/console/enquiries", label: "Inbox", icon: Inbox, badgeKey: "enquiries" as const },
-  { href: "/console/services", label: "Service Desk", icon: LifeBuoy, badgeKey: "services" as const },
+  { href: "/console/enquiries", label: "Forms", icon: Inbox, badgeKey: "enquiries" as const },
   { href: "/console/talent", label: "Talent Registry", icon: Users },
   { href: "/console/employers", label: "Employers & CRM", icon: Building2 },
   { href: "/console/vacancies", label: "Client Vacancies", icon: Briefcase },
@@ -41,7 +37,7 @@ export function ConsoleSidebar({
 }: {
   user: { name: string; role: string };
   /** Unanswered counts for the badges, keyed to NAV's `badgeKey`. */
-  counts: { enquiries: number; services: number };
+  counts: { enquiries: number };
   footer: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -49,7 +45,7 @@ export function ConsoleSidebar({
 
   const nav = (
     <nav aria-label="Console" className="grid gap-1">
-      {NAV.map((item, idx) => {
+      {NAV.map((item) => {
         const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
         const badge = item.badgeKey ? counts[item.badgeKey] : 0;
 
@@ -72,14 +68,6 @@ export function ConsoleSidebar({
                 className="absolute inset-y-1.5 left-0 w-0.5 rounded-full bg-primary"
               />
             )}
-            <span
-              className={cn(
-                "text-[10px] w-4 font-mono transition-colors",
-                active ? "text-primary font-bold" : "text-white/40 group-hover:text-white/70",
-              )}
-            >
-              {pad(idx + 1)}
-            </span>
             <item.icon className={cn("size-3.5 shrink-0", active ? "text-primary" : "text-white/60")} />
             <span className="flex-1 truncate normal-case font-sans text-sm tracking-normal">
               {item.label}

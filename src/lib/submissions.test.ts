@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
+  FORM_TABS,
   OPEN_STATUSES,
   REPLY_TYPES,
   SUBMISSIONS,
@@ -149,5 +150,24 @@ describe("intake call-site discipline", () => {
     // The one that throws is the one with no other record behind it.
     const loud = src.slice(src.indexOf("await recordSubmission({"));
     expect(loud.slice(0, 200)).toContain('type: "career_service"');
+  });
+});
+
+describe("the Forms page's service tabs", () => {
+  it("puts every form in exactly one tab, so All always equals the sum of the tabs", () => {
+    for (const s of SUBMISSIONS) {
+      const homes = FORM_TABS.filter((t) => t.types.includes(s.value));
+      expect(homes.map((t) => t.key), s.value).toHaveLength(1);
+    }
+  });
+
+  it("only names tags the registry knows", () => {
+    const known = new Set(SUBMISSIONS.map((s) => s.value));
+    for (const t of FORM_TABS) for (const type of t.types) expect(known.has(type), `${t.key}: ${type}`).toBe(true);
+  });
+
+  it("gives every tab a unique key", () => {
+    const keys = FORM_TABS.map((t) => t.key);
+    expect(new Set(keys).size).toBe(keys.length);
   });
 });
