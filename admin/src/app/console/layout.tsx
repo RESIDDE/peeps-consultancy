@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import { and, count, eq, inArray } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { enquiries } from "@/db/schema";
-import { typesInGroup } from "@/lib/submissions";
 import { requireRole, STAFF } from "@/lib/permissions";
 import { ConsoleSidebar } from "@/components/console/sidebar";
 import { SignOutButton } from "@/components/sign-out-button";
@@ -17,13 +16,7 @@ export const metadata: Metadata = {
 export default async function ConsoleLayout({ children }: { children: React.ReactNode }) {
   const session = await requireRole(STAFF);
   // Badges count only what is still unanswered, so they mean "pick these up", not "look here".
-  const [[{ n }], [{ s: serviceCount }]] = await Promise.all([
-    db.select({ n: count() }).from(enquiries).where(eq(enquiries.status, "new")),
-    db
-      .select({ s: count() })
-      .from(enquiries)
-      .where(and(eq(enquiries.status, "new"), inArray(enquiries.type, typesInGroup("services")))),
-  ]);
+  const [{ n }] = await db.select({ n: count() }).from(enquiries).where(eq(enquiries.status, "new"));
 
   return (
     <div className="studio min-h-dvh flex flex-col bg-background text-foreground selection:bg-primary/20">
@@ -36,7 +29,7 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
 
       <ConsoleSidebar
         user={{ name: session.user.name, role: session.role }}
-        counts={{ enquiries: n, services: serviceCount }}
+        counts={{ enquiries: n }}
         footer={
           <div className="flex items-center justify-between">
             <SignOutButton className="text-white/70 hover:text-white text-xs font-mono" />

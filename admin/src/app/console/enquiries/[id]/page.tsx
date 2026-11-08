@@ -19,7 +19,7 @@ import {
   SubmissionTag,
 } from "@/components/console/submissions";
 import { addNote } from "@/server/actions/console";
-import { submissionMeta } from "@/lib/submissions";
+import { submissionMeta, tabOf } from "@/lib/submissions";
 import { STAFF } from "@/lib/permissions";
 import { formatDate, formatDateTime, humanize } from "@/lib/format";
 
@@ -68,7 +68,7 @@ export default async function SubmissionPage({ params }: { params: Promise<{ id:
   return (
     <>
       <PageHeader
-        back={{ href: "/console/enquiries", label: "Inbox" }}
+        back={{ href: `/console/enquiries${tabOf(e.type) ? `?tab=${tabOf(e.type)!.key}` : ""}`, label: tabOf(e.type)?.label ?? "Forms" }}
         eyebrow={
           <span className="flex flex-wrap items-center gap-2">
             <SubmissionTag type={e.type} />
@@ -187,10 +187,10 @@ export default async function SubmissionPage({ params }: { params: Promise<{ id:
             <p className="label mb-2 text-[0.66rem] text-muted-foreground">Where this came from</p>
             <p className="text-sm leading-relaxed text-muted-foreground">{meta.note}</p>
             <p className="mt-3">
-              <PortalTag variant="muted">{meta.group}</PortalTag>
+              <PortalTag variant="muted">{tabOf(e.type)?.label ?? "Other"}</PortalTag>
             </p>
-            <Link href={`/console/enquiries?type=${e.type}&status=all`} className="mt-4 inline-block font-mono text-[11px] text-primary hover:underline">
-              Every {meta.label.toLowerCase()} →
+            <Link href={`/console/enquiries?show=all${tabOf(e.type) ? `&tab=${tabOf(e.type)!.key}` : ""}`} className="mt-4 inline-block font-mono text-[11px] text-primary hover:underline">
+              All {tabOf(e.type)?.label ?? "similar"} forms →
             </Link>
           </div>
         </div>

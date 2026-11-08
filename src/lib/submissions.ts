@@ -301,3 +301,120 @@ export const OPEN_STATUSES: readonly string[] = ["new", "in_progress", "schedule
 export function statusLabel(status: string): string {
   return SUBMISSION_STATUSES.find((s) => s.value === status)?.label ?? status;
 }
+
+/* ------------------------------------------------------------------ */
+/* Service tabs                                                        */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The tabs along the top of the console's Forms page, one per service PEEPs offers.
+ *
+ * Staff think in services ("a payroll enquiry came in"), not in form tags, so this list
+ * groups the tags above the way the business sells them. Every tag belongs to exactly one
+ * tab — the test in `submissions.test.ts` holds that — so the "All" view and the sum of
+ * the tabs always agree.
+ *
+ * `columns` names answers to lift out of a submission's `details` into their own table
+ * columns, by the label the form gave them. Only the services whose forms ask structured
+ * questions have them.
+ */
+export interface FormTab {
+  /** URL key: `/console/enquiries?tab=<key>`. */
+  key: string;
+  label: string;
+  /** One plain sentence, shown under the tabs when this one is open. */
+  note: string;
+  types: readonly string[];
+  columns?: readonly string[];
+  /** Registrations and portal activity owe nobody a reply, so their tab opens on "All". */
+  logOnly?: boolean;
+}
+
+export const FORM_TABS: readonly FormTab[] = [
+  {
+    key: "hire",
+    label: "Hire talent",
+    note: "Employers asking PEEPs to fill a role, try a pilot, or ask about recruitment.",
+    types: ["talent_request", "pilot", "recruitment"],
+  },
+  {
+    key: "workforce",
+    label: "Workforce",
+    note: "Contract staffing, outsourced teams and workforce administration.",
+    types: ["workforce"],
+  },
+  {
+    key: "payroll",
+    label: "Payroll",
+    note: "Businesses asking PEEPs to run their payroll and statutory remittances.",
+    types: ["payroll"],
+    columns: ["Employees", "Pay frequency", "Current method"],
+  },
+  {
+    key: "compliance",
+    label: "Compliance",
+    note: "Free compliance health checks: CAC, NSITF, ITF, PenCom, tax and industry filings.",
+    types: ["compliance"],
+    columns: ["Industry", "Areas needed", "Timeframe"],
+  },
+  {
+    key: "auto-check",
+    label: "Auto Check",
+    note: "Pre-purchase vehicle inspections, booked for a date and a dealership.",
+    types: ["auto_check"],
+    columns: ["Package", "Vehicle", "Preferred date"],
+  },
+  {
+    key: "academy",
+    label: "Academy",
+    note: "Training programmes, Talent Ready cohorts and employer-sponsored courses.",
+    types: ["academy"],
+  },
+  {
+    key: "professional",
+    label: "Professional services",
+    note: "Accounting, tax, audit support and CFO advisory.",
+    types: ["professional"],
+  },
+  {
+    key: "careers",
+    label: "Career services",
+    note: "Candidates asking for CV development, interview preparation or coaching.",
+    types: ["career_service"],
+  },
+  {
+    key: "partners",
+    label: "Partnerships",
+    note: "Schools, universities and associations proposing a talent pipeline.",
+    types: ["partner"],
+  },
+  {
+    key: "contact",
+    label: "General",
+    note: "Anything sent through the contact page.",
+    types: ["contact"],
+  },
+  {
+    key: "activity",
+    label: "Sign-ups & activity",
+    note: "New accounts and portal activity. Recorded for the file — nobody is waiting on a reply.",
+    types: [
+      "candidate_registration",
+      "employer_registration",
+      "job_application",
+      "employer_decision",
+      "profile_update",
+      "placement_feedback",
+    ],
+    logOnly: true,
+  },
+];
+
+export function formTab(key: string | undefined): FormTab | undefined {
+  return FORM_TABS.find((t) => t.key === key);
+}
+
+/** The tab a submission's tag sits under, for labels and links back to its list. */
+export function tabOf(type: string): FormTab | undefined {
+  return FORM_TABS.find((t) => t.types.includes(type));
+}
