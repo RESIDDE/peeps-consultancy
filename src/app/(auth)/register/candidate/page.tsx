@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ActionForm, FieldError, FormMessage } from "@/components/ui/action-form";
+import { FieldError, FormMessage } from "@/components/ui/action-form";
 import { Field } from "@/components/ui/field";
 import { Checkbox, Input, Select } from "@/components/ui/input";
 import { SubmitButton } from "@/components/ui/submit-button";
+import { ConfirmByCodeForm } from "@/components/auth/confirm-by-code-form";
+import { OTP_MINUTES } from "@/lib/auth";
 import { registerCandidate } from "@/server/actions/auth";
 import { CANDIDATE_SOURCES, NIGERIAN_CITIES, SECTORS } from "@/lib/taxonomy";
 import { CONSENT_TEXT } from "@/lib/consent";
@@ -18,7 +20,7 @@ export default function RegisterCandidatePage() {
       <p className="mt-5 max-w-[38ch] text-[0.95rem] leading-snug text-muted-foreground">
         It&apos;s free. You&apos;ll get a PEEPs ID straight away and can complete your profile in your dashboard.
       </p>
-      <ActionForm action={registerCandidate} className="mt-12 grid gap-4 sm:grid-cols-2">
+      <ConfirmByCodeForm action={registerCandidate} minutes={OTP_MINUTES} confirmLabel="Create my profile" className="mt-12 grid gap-4 sm:grid-cols-2">
         <Field label="First name" name="firstName" required>
           <Input id="firstName" name="firstName" autoComplete="given-name" required />
         </Field>
@@ -58,9 +60,6 @@ export default function RegisterCandidatePage() {
             ))}
           </Select>
         </Field>
-        <Field label="Password" name="password" required hint="At least 8 characters" className="sm:col-span-2">
-          <Input id="password" name="password" type="password" autoComplete="new-password" minLength={8} required />
-        </Field>
         <div className="sm:col-span-2">
           <label className="flex gap-4 rounded-[7px] border border-border p-5 text-[0.9rem] leading-snug">
             <Checkbox name="consent" required className="mt-0.5" />
@@ -76,10 +75,10 @@ export default function RegisterCandidatePage() {
         <div className="sm:col-span-2">
           <FormMessage />
         </div>
-        <SubmitButton size="lg" className="w-full sm:col-span-2" pendingText="Creating your profile…">
-          Create my PEEPs profile
+        <SubmitButton size="lg" className="w-full sm:col-span-2">
+          Email me a code to continue
         </SubmitButton>
-      </ActionForm>
+      </ConfirmByCodeForm>
       <p className="label mt-10 border-t border-border pt-7 text-muted-foreground">
         Already registered?{" "}
         <Link href="/sign-in" className="text-foreground underline-offset-4 hover:underline">

@@ -8,6 +8,9 @@ import { useDialogClose } from "./dialog";
 
 const StateCtx = React.createContext<ActionState>(initialActionState);
 
+/** Lets a form that runs its own action (not via ActionForm) feed FormMessage and FieldError. */
+export const ActionStateProvider = StateCtx.Provider;
+
 export function useActionFormState() {
   return React.useContext(StateCtx);
 }
