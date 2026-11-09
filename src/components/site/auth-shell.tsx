@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -58,11 +59,21 @@ export function AuthShell({
       </aside>
 
       <div data-tone="light" className="tone-light wash flex flex-col">
-        <div className="flex items-center justify-between px-[var(--shell)] py-6">
+        <div className="flex items-center justify-between gap-4 px-[var(--shell)] py-6">
           <Link href={homeHref} className="lg:invisible" aria-label="PEEPs home">
             <Logo compact />
           </Link>
-          <ThemeToggle />
+          <div className="flex items-center gap-5">
+            {/* Said in words as well as by the wordmark: a way out of the form is always in view. */}
+            <Link
+              href={homeHref}
+              className="label -my-2 inline-flex items-center gap-2 py-2 text-muted-foreground transition-colors duration-200 hover:text-foreground"
+            >
+              <ArrowLeft aria-hidden className="size-3.5" />
+              Back to website
+            </Link>
+            <ThemeToggle />
+          </div>
         </div>
         <main id="main" className="flex flex-1 items-start justify-center px-[var(--shell)] pb-20 pt-4 sm:items-center">
           <div className="w-full max-w-xl">{children}</div>

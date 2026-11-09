@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { AuthLadder, AuthShell } from "@/components/site/auth-shell";
 import { CodeSignIn } from "@/components/auth/code-sign-in";
 import { OTP_MINUTES } from "@/lib/auth";
+import { RESEND_AFTER_SECONDS } from "@/server/otp";
 import { getSession, STAFF } from "@/lib/permissions";
 import { STAGES, STAGE_META } from "@/lib/quality";
 import type { Role } from "@/db/schema";
@@ -35,7 +36,7 @@ export default async function StaffSignInPage({ searchParams }: { searchParams: 
         For PEEPs admins and recruiters. We&apos;ll email you a code. Employers and candidates sign in on the main site.
       </p>
       <div className="mt-12">
-        <CodeSignIn request={requestStaffCode} verify={verifyStaffCode} next={next} minutes={OTP_MINUTES} />
+        <CodeSignIn request={requestStaffCode} verify={verifyStaffCode} next={next} minutes={OTP_MINUTES} resendSeconds={RESEND_AFTER_SECONDS} emailLabel="Work email" />
       </div>
       {needsSetup && (
         <p className="mt-10 border-t border-border pt-7 text-sm text-muted-foreground">

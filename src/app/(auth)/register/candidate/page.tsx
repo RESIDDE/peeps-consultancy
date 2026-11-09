@@ -9,13 +9,14 @@ import { OTP_MINUTES } from "@/lib/auth";
 import { registerCandidate } from "@/server/actions/auth";
 import { CANDIDATE_SOURCES, NIGERIAN_CITIES, SECTORS } from "@/lib/taxonomy";
 import { CONSENT_TEXT } from "@/lib/consent";
+import { signInHref } from "@/lib/sign-in";
 
 export const metadata: Metadata = { title: "Join the talent registry" };
 
 export default function RegisterCandidatePage() {
   return (
     <div>
-      <p className="label text-muted-foreground">PEEPs Talent Registry</p>
+      <p className="label text-muted-foreground">Create account · Candidate</p>
       <h1 className="headline mt-5 text-[clamp(2rem,3.2vw,2.8rem)]">Create your profile.</h1>
       <p className="mt-5 max-w-[38ch] text-[0.95rem] leading-snug text-muted-foreground">
         It&apos;s free. You&apos;ll get a PEEPs ID straight away and can complete your profile in your dashboard.
@@ -81,8 +82,8 @@ export default function RegisterCandidatePage() {
       </ConfirmByCodeForm>
       <p className="label mt-10 border-t border-border pt-7 text-muted-foreground">
         Already registered?{" "}
-        <Link href="/sign-in" className="text-foreground underline-offset-4 hover:underline">
-          Sign in
+        <Link href={signInHref("candidate")} className="text-foreground underline-offset-4 hover:underline">
+          Candidate sign in
         </Link>
       </p>
     </div>

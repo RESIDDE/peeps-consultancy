@@ -8,13 +8,14 @@ import { ConfirmByCodeForm } from "@/components/auth/confirm-by-code-form";
 import { OTP_MINUTES } from "@/lib/auth";
 import { registerEmployer } from "@/server/actions/auth";
 import { INDUSTRIES } from "@/lib/pipeline";
+import { signInHref } from "@/lib/sign-in";
 
 export const metadata: Metadata = { title: "Employer account" };
 
 export default function RegisterEmployerPage() {
   return (
     <div>
-      <p className="label text-muted-foreground">For employers</p>
+      <p className="label text-muted-foreground">Create account · Employer</p>
       <h1 className="headline mt-5 text-[clamp(2rem,3.2vw,2.8rem)]">Create an employer account.</h1>
       <p className="mt-5 max-w-[38ch] text-[0.95rem] leading-snug text-muted-foreground">
         Post vacancies, review evidence-based shortlists and track every hire in one place.
@@ -53,8 +54,8 @@ export default function RegisterEmployerPage() {
       </ConfirmByCodeForm>
       <p className="label mt-10 border-t border-border pt-7 text-muted-foreground">
         Already have an account?{" "}
-        <Link href="/sign-in" className="text-foreground underline-offset-4 hover:underline">
-          Sign in
+        <Link href={signInHref("employer")} className="text-foreground underline-offset-4 hover:underline">
+          Employer sign in
         </Link>
       </p>
       <p className="label mt-4 text-muted-foreground">
