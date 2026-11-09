@@ -6,6 +6,8 @@ import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import type { ActionState, FormAction } from "@/lib/action-state";
+import { cn } from "@/lib/utils";
+import { SentTo, StepHeader } from "./steps";
 
 type Stage = "details" | "code";
 interface State extends ActionState {
@@ -77,7 +79,9 @@ export function ConfirmByCodeForm({
 
   return (
     <ActionStateProvider value={state}>
-      <form onSubmit={submitDetails} className={className} hidden={onCodeStep}>
+      {/* Coming back from the code step replays the entrance: the form leaves display:none. */}
+      <form onSubmit={submitDetails} className={cn(className, editing && "anim-step")} hidden={onCodeStep}>
+        <StepHeader step={1} title="Your details" className="col-span-full" />
         {/* Disabled while the request runs: the submit button can't show its own pending
             text here, because this form doesn't go through a form action. */}
         <fieldset disabled={pending} className="contents">
@@ -96,13 +100,11 @@ export function ConfirmByCodeForm({
             e.preventDefault();
             resubmit(String(new FormData(e.currentTarget).get("code") ?? ""));
           }}
-          className="mt-12 grid gap-4"
+          className="anim-step mt-12 grid gap-5"
         >
-          <p className="text-[0.95rem] leading-snug">
-            We sent a 6-digit code to <strong className="font-medium">{state.value}</strong>. Enter it to finish. It
-            expires in {minutes} minutes.
-          </p>
-          <Field label="Code" name="code">
+          <StepHeader step={2} title="Confirm your email" />
+          <SentTo email={state.value ?? ""} onChange={() => setEditing(true)} changeLabel="Change details" />
+          <Field label="6-digit code" name="code" hint={`Enter it to finish. The code expires in ${minutes} minutes.`}>
             <Input
               id="code"
               name="code"
@@ -124,22 +126,16 @@ export function ConfirmByCodeForm({
           <Button type="submit" size="lg" className="w-full" disabled={pending}>
             {pending ? "Checking…" : confirmLabel}
           </Button>
-          <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
+          <div className="grid gap-2 text-xs leading-relaxed text-muted-foreground">
             <button
               type="button"
               disabled={pending}
               onClick={() => resubmit()}
-              className="underline-offset-4 hover:text-foreground hover:underline"
+              className="w-fit underline underline-offset-4 transition-opacity duration-200 hover:opacity-60"
             >
               Didn&apos;t get it? Send a new code
             </button>
-            <button
-              type="button"
-              onClick={() => setEditing(true)}
-              className="underline-offset-4 hover:text-foreground hover:underline"
-            >
-              Change my details
-            </button>
+            <p>Can&apos;t find the email? Check your spam or promotions folder.</p>
           </div>
         </form>
       )}

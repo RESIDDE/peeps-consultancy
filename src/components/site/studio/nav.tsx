@@ -59,7 +59,7 @@ const ITEMS: MenuItem[] = [
       { href: "/employers#request", label: "Request a shortlist" },
       { href: "/employers#packages", label: "Recruitment packages" },
       { href: "/how-we-select", label: "How we select" },
-      { href: "/sign-in", label: "Employer sign-in" },
+      { href: "/sign-in/employer", label: "Employer sign-in" },
     ],
   },
   {
@@ -71,7 +71,7 @@ const ITEMS: MenuItem[] = [
       { href: "/register/candidate", label: "Register your profile" },
       { href: "/candidates#career-services", label: "Career services" },
       { href: "/academy", label: "PEEPs Academy" },
-      { href: "/sign-in", label: "Candidate sign-in" },
+      { href: "/sign-in/candidate", label: "Candidate sign-in" },
     ],
   },
   {

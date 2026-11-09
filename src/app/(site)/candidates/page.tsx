@@ -34,7 +34,7 @@ export default function CandidatesPage() {
           actions={
             <>
               <CtaLine href="/register/candidate">Register your profile</CtaLine>
-              <CtaLine href="/sign-in">I have an account</CtaLine>
+              <CtaLine href="/sign-in/candidate">I have an account</CtaLine>
             </>
           }
           facts={[

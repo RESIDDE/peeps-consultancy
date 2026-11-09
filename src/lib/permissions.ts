@@ -4,6 +4,7 @@ import { cache } from "react";
 import { auth } from "./auth";
 import type { Role } from "@/db/schema";
 import { homeFor } from "./roles";
+import { isAudience, signInHref } from "./sign-in";
 
 export { homeFor };
 
@@ -13,10 +14,13 @@ export const getSession = cache(async () => {
 
 export const STAFF: Role[] = ["admin", "recruiter"];
 
-/** For layouts/pages: redirect away unless the user has one of `roles`. */
+/**
+ * For layouts/pages: redirect away unless the user has one of `roles`. Signed out, an area
+ * for one public account type sends them to that type's sign-in, not to the choice.
+ */
 export async function requireRole(roles: Role[]) {
   const session = await getSession();
-  if (!session) redirect("/sign-in");
+  if (!session) redirect(signInHref(roles.length === 1 && isAudience(roles[0]) ? roles[0] : null));
   const role = session.user.role as Role;
   if (!roles.includes(role)) redirect(homeFor(role));
   return { ...session, role };

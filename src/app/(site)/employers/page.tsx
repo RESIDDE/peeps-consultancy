@@ -52,6 +52,7 @@ export default function EmployersPage() {
             <>
               <CtaLine href="#request">Request talent</CtaLine>
               <CtaLine href="/register/employer">Create an account</CtaLine>
+              <CtaLine href="/sign-in/employer">I have an account</CtaLine>
             </>
           }
           facts={[
