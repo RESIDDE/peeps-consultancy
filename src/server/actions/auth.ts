@@ -8,16 +8,16 @@ import { APIError } from "better-auth/api";
 import { db } from "@/db";
 import { candidates, employerContacts, employers, user } from "@/db/schema";
 import { auth } from "@/lib/auth";
-import { fail, type ActionState } from "@/lib/action-state";
+import { fail, ok, type ActionState } from "@/lib/action-state";
 import { homeFor } from "@/lib/permissions";
 import { isSectorCode, SECTORS } from "@/lib/taxonomy";
 import { CONSENT_VERSION } from "@/lib/consent";
 import { issuePepId } from "../pep";
 import { logActivity } from "../activity";
 import { recordSubmissionQuietly } from "../intake";
+import { otpMessage } from "../otp-message";
+import { codeFrom, codeSentRecently, createVerifiedLogin, sendCodeStep } from "../otp";
 import { fieldErrors, int, str, zEmail, zPhone, zRequired } from "../forms";
-
-const password = z.string().min(8, "Use at least 8 characters").max(128);
 
 const EMAIL_TAKEN = "An account with this email already exists. Try signing in.";
 
@@ -25,7 +25,7 @@ function authMessage(e: unknown): string {
   if (e instanceof APIError) {
     const msg = e.body?.message ?? e.message;
     if (/exist/i.test(msg)) return EMAIL_TAKEN;
-    if (/invalid/i.test(msg)) return "Incorrect email or password.";
+    if (/invalid/i.test(msg)) return "Please check your email address.";
     return msg;
   }
   console.error(e);
@@ -53,16 +53,46 @@ function safeNext(next: string): string | null {
   return next.startsWith("/") && !next.startsWith("//") ? next : null;
 }
 
-export async function signIn(_: ActionState, fd: FormData): Promise<ActionState> {
+/** Email-shaped enough to ask Better Auth for a code; it does the real validation. */
+const LOOKS_LIKE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Step one of signing in: email a 6-digit code.
+ *
+ * Always answers "sent" for a well-formed address, whether or not it has an account. The
+ * auth config only emails registered addresses, so this can't be used to find out who has
+ * an account.
+ */
+export async function requestSignInCode(_: ActionState, fd: FormData): Promise<ActionState> {
   const email = str(fd, "email").toLowerCase();
-  const pw = str(fd, "password");
-  if (!email || !pw) return fail("Enter your email and password.");
+  if (!LOOKS_LIKE_EMAIL.test(email)) return fail("Enter a valid email address.");
+  // One code a minute per address. Answered as "sent" either way, so this can't reveal
+  // which addresses have accounts; the code sent a moment ago still works.
+  if (await codeSentRecently(email)) return ok("Code sent.", email);
+  try {
+    await auth.api.sendVerificationOTP({ body: { email, type: "sign-in" }, headers: await headers() });
+  } catch (e) {
+    // Rate limiting is the one refusal worth explaining; anything else stays generic.
+    if (e instanceof APIError && e.status === "TOO_MANY_REQUESTS") return fail("Too many codes requested. Wait a minute and try again.");
+    console.error(e);
+    return fail("We couldn't send a code just now. Please try again.");
+  }
+  return ok("Code sent.", email);
+}
+
+/** Step two: check the code and sign in, then go to that user's own dashboard. */
+export async function verifySignInCode(_: ActionState, fd: FormData): Promise<ActionState> {
+  const email = str(fd, "email").toLowerCase();
+  const otp = str(fd, "code").replace(/\s+/g, "");
+  if (!/^\d{6}$/.test(otp)) return fail("Enter the 6-digit code from the email.");
   let role: string | undefined;
   try {
-    const res = await auth.api.signInEmail({ body: { email, password: pw }, headers: await headers() });
+    const res = await auth.api.signInEmailOTP({ body: { email, otp }, headers: await headers() });
     role = (res.user as { role?: string }).role;
   } catch (e) {
-    return fail(authMessage(e));
+    if (e instanceof APIError) return fail(otpMessage(e));
+    console.error(e);
+    return fail("Something went wrong. Please try again.");
   }
   redirect(safeNext(str(fd, "next")) ?? homeFor(role));
 }
@@ -77,7 +107,6 @@ const candidateSchema = z.object({
   lastName: zRequired("Last name"),
   email: zEmail,
   phone: zPhone,
-  password,
   city: zRequired("City"),
   sectorCode: z.string().refine(isSectorCode, "Choose a talent category"),
   profession: zRequired("Profession"),
@@ -90,7 +119,6 @@ export async function registerCandidate(_: ActionState, fd: FormData): Promise<A
     lastName: str(fd, "lastName"),
     email: str(fd, "email"),
     phone: str(fd, "phone"),
-    password: str(fd, "password"),
     city: str(fd, "city"),
     sectorCode: str(fd, "sectorCode"),
     profession: str(fd, "profession"),
@@ -99,13 +127,15 @@ export async function registerCandidate(_: ActionState, fd: FormData): Promise<A
   if (!parsed.success) return fail("Please check the highlighted fields.", fieldErrors(parsed.error));
   const d = parsed.data;
   if (await emailTaken(d.email)) return fail(EMAIL_TAKEN);
+  const code = codeFrom(fd);
+  if (code === null) return sendCodeStep(d.email);
+  if (!/^\d{6}$/.test(code)) return fail("Enter the 6-digit code from the email.");
 
   let pendingUserId: string | null = null;
   try {
-    const res = await auth.api.signUpEmail({
-      body: { name: `${d.firstName} ${d.lastName}`, email: d.email, password: d.password },
-      headers: await headers(),
-    });
+    const login = await createVerifiedLogin(`${d.firstName} ${d.lastName}`, d.email, code);
+    if ("error" in login) return fail(login.error);
+    const res = { user: { id: login.userId } };
     pendingUserId = res.user.id;
     const pepId = await issuePepId(d.sectorCode);
     const [c] = await db
@@ -127,7 +157,6 @@ export async function registerCandidate(_: ActionState, fd: FormData): Promise<A
       })
       .returning({ id: candidates.id });
     pendingUserId = null;
-    await auth.api.signInEmail({ body: { email: d.email, password: d.password }, headers: await headers() });
     await logActivity(res.user.id, "candidate", c.id, "registered", `Self-registered as ${pepId}`);
     await recordSubmissionQuietly({
       type: "candidate_registration",
@@ -163,7 +192,6 @@ const employerSchema = z.object({
   role: z.string().trim(),
   email: zEmail,
   phone: zPhone,
-  password,
 });
 
 export async function registerEmployer(_: ActionState, fd: FormData): Promise<ActionState> {
@@ -175,22 +203,22 @@ export async function registerEmployer(_: ActionState, fd: FormData): Promise<Ac
     role: str(fd, "role"),
     email: str(fd, "email"),
     phone: str(fd, "phone"),
-    password: str(fd, "password"),
   });
   if (!parsed.success) return fail("Please check the highlighted fields.", fieldErrors(parsed.error));
   const d = parsed.data;
   if (await emailTaken(d.email)) return fail(EMAIL_TAKEN);
+  const code = codeFrom(fd);
+  if (code === null) return sendCodeStep(d.email);
+  if (!/^\d{6}$/.test(code)) return fail("Enter the 6-digit code from the email.");
 
   let pendingUserId: string | null = null;
   try {
-    const res = await auth.api.signUpEmail({
-      body: { name: d.name, email: d.email, password: d.password },
-      headers: await headers(),
-    });
+    const login = await createVerifiedLogin(d.name, d.email, code, "employer");
+    if ("error" in login) return fail(login.error);
+    const res = { user: { id: login.userId } };
     pendingUserId = res.user.id;
     // All-or-nothing: an employer login without a linked company would 404 on its dashboard.
     const emp = await db.transaction(async (tx) => {
-      await tx.update(user).set({ role: "employer" }).where(eq(user.id, res.user.id));
       const [row] = await tx
         .insert(employers)
         .values({
@@ -215,8 +243,6 @@ export async function registerEmployer(_: ActionState, fd: FormData): Promise<Ac
       return row;
     });
     pendingUserId = null;
-    // Signed in only now, so the session already carries the employer role.
-    await auth.api.signInEmail({ body: { email: d.email, password: d.password }, headers: await headers() });
     await logActivity(res.user.id, "employer", emp.id, "registered", "Employer self-registered");
     await recordSubmissionQuietly({
       type: "employer_registration",

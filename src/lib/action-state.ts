@@ -4,14 +4,16 @@ export interface ActionState {
   errors?: Record<string, string[] | undefined>;
   /** Changes on every completed submission so effects can react to repeats. */
   at?: number;
+  /** A value the action hands back to the form, e.g. the normalised email a code went to. */
+  value?: string;
 }
 
 export const initialActionState: ActionState = { ok: false };
 
 export type FormAction = (prev: ActionState, formData: FormData) => Promise<ActionState>;
 
-export function ok(message?: string): ActionState {
-  return { ok: true, message, at: Date.now() };
+export function ok(message?: string, value?: string): ActionState {
+  return { ok: true, message, value, at: Date.now() };
 }
 
 export function fail(message: string, errors?: ActionState["errors"]): ActionState {

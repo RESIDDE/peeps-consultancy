@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AuthLadder, AuthShell } from "@/components/site/auth-shell";
-import { ActionForm, FormMessage } from "@/components/ui/action-form";
-import { Field } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { SubmitButton } from "@/components/ui/submit-button";
+import { CodeSignIn } from "@/components/auth/code-sign-in";
+import { OTP_MINUTES } from "@/lib/auth";
 import { getSession, STAFF } from "@/lib/permissions";
 import { STAGES, STAGE_META } from "@/lib/quality";
 import type { Role } from "@/db/schema";
-import { staffSignIn } from "./actions";
+import { requestStaffCode, verifyStaffCode } from "./actions";
+import { adminExists } from "../setup/admin-exists";
+import Link from "next/link";
 
 export const metadata: Metadata = { title: "Sign in" };
 
@@ -16,6 +16,8 @@ export default async function StaffSignInPage({ searchParams }: { searchParams: 
   const session = await getSession();
   if (session && STAFF.includes(session.user.role as Role)) redirect("/console");
   const { next } = await searchParams;
+  // Until the first admin exists, nobody can sign in here: point to setting one up.
+  const needsSetup = !(await adminExists());
 
   return (
     <AuthShell
@@ -30,29 +32,18 @@ export default async function StaffSignInPage({ searchParams }: { searchParams: 
       <p className="label text-muted-foreground">PEEPs Console</p>
       <h1 className="headline mt-5 text-[clamp(2rem,3.2vw,2.8rem)]">Staff sign in.</h1>
       <p className="mt-5 max-w-[34ch] text-[0.95rem] leading-snug text-muted-foreground">
-        For PEEPs admins and recruiters. Employers and candidates sign in on the main site.
+        For PEEPs admins and recruiters. We&apos;ll email you a code. Employers and candidates sign in on the main site.
       </p>
-      <ActionForm action={staffSignIn} className="mt-12 grid gap-4">
-        <input type="hidden" name="next" value={next ?? ""} />
-        <Field label="Email" name="email">
-          <Input id="email" name="email" type="email" autoComplete="email" required autoFocus />
-        </Field>
-        <Field label="Password" name="password">
-          <Input id="password" name="password" type="password" autoComplete="current-password" required />
-        </Field>
-        <FormMessage />
-        <SubmitButton size="lg" className="mt-2 w-full" pendingText="Signing in…">
-          Sign in
-        </SubmitButton>
-      </ActionForm>
-      {process.env.NODE_ENV !== "production" && (
-        <div className="mt-12 rounded-[7px] border border-dashed border-border p-5 text-[0.85rem] leading-snug text-muted-foreground">
-          <p className="label text-foreground">Demo staff accounts — development only</p>
-          <p className="mt-3">admin@peeps.local · recruiter@peeps.local</p>
-          <p>
-            Password: <code className="font-mono">peeps-demo-2026</code>
-          </p>
-        </div>
+      <div className="mt-12">
+        <CodeSignIn request={requestStaffCode} verify={verifyStaffCode} next={next} minutes={OTP_MINUTES} />
+      </div>
+      {needsSetup && (
+        <p className="mt-10 border-t border-border pt-7 text-sm text-muted-foreground">
+          No admin account yet?{" "}
+          <Link href="/setup" className="text-foreground underline-offset-4 hover:underline">
+            Create the admin account
+          </Link>
+        </p>
       )}
     </AuthShell>
   );

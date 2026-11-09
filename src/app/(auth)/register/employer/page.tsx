@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ActionForm, FormMessage } from "@/components/ui/action-form";
+import { FormMessage } from "@/components/ui/action-form";
 import { Field } from "@/components/ui/field";
 import { Input, Select } from "@/components/ui/input";
 import { SubmitButton } from "@/components/ui/submit-button";
+import { ConfirmByCodeForm } from "@/components/auth/confirm-by-code-form";
+import { OTP_MINUTES } from "@/lib/auth";
 import { registerEmployer } from "@/server/actions/auth";
 import { INDUSTRIES } from "@/lib/pipeline";
 
@@ -17,7 +19,7 @@ export default function RegisterEmployerPage() {
       <p className="mt-5 max-w-[38ch] text-[0.95rem] leading-snug text-muted-foreground">
         Post vacancies, review evidence-based shortlists and track every hire in one place.
       </p>
-      <ActionForm action={registerEmployer} className="mt-12 grid gap-4 sm:grid-cols-2">
+      <ConfirmByCodeForm action={registerEmployer} minutes={OTP_MINUTES} confirmLabel="Create my employer account" className="mt-12 grid gap-4 sm:grid-cols-2">
         <Field label="Company name" name="company" required className="sm:col-span-2">
           <Input id="company" name="company" autoComplete="organization" required />
         </Field>
@@ -42,17 +44,20 @@ export default function RegisterEmployerPage() {
         <Field label="Phone" name="phone">
           <Input id="phone" name="phone" type="tel" autoComplete="tel" placeholder="+234" />
         </Field>
-        <Field label="Password" name="password" required hint="At least 8 characters" className="sm:col-span-2">
-          <Input id="password" name="password" type="password" autoComplete="new-password" minLength={8} required />
-        </Field>
         <div className="sm:col-span-2">
           <FormMessage />
         </div>
-        <SubmitButton size="lg" className="w-full sm:col-span-2" pendingText="Creating account…">
-          Create employer account
+        <SubmitButton size="lg" className="w-full sm:col-span-2">
+          Email me a code to continue
         </SubmitButton>
-      </ActionForm>
+      </ConfirmByCodeForm>
       <p className="label mt-10 border-t border-border pt-7 text-muted-foreground">
+        Already have an account?{" "}
+        <Link href="/sign-in" className="text-foreground underline-offset-4 hover:underline">
+          Sign in
+        </Link>
+      </p>
+      <p className="label mt-4 text-muted-foreground">
         Prefer to talk first?{" "}
         <Link href="/employers#request" className="text-foreground underline-offset-4 hover:underline">
           Submit a talent request
