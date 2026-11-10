@@ -9,6 +9,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
 import { homeFor } from "@/lib/roles";
+import { isAudience } from "@/lib/sign-in";
 import { NAV } from "./nav-data";
 
 export function SiteHeader() {
@@ -22,7 +23,8 @@ export function SiteHeader() {
     fetch("/api/auth/get-session", { signal: ctrl.signal, credentials: "same-origin" })
       .then((r) => (r.ok ? r.json() : null))
       .then((s: { user?: { role?: string } } | null) => {
-        if (s?.user) setAccountHref(homeFor(s.user.role));
+        // Only employers and candidates have a dashboard on this site.
+        if (s?.user?.role && isAudience(s.user.role)) setAccountHref(homeFor(s.user.role));
       })
       .catch(() => {});
     return () => ctrl.abort();

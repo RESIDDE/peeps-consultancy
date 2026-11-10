@@ -1,5 +1,42 @@
 import { describe, expect, it } from "vitest";
-import { audienceFor, isAudience, signInHref } from "./sign-in";
+import { audienceFor, destinationFor, isAudience, signInHref } from "./sign-in";
+import { homeFor } from "./roles";
+
+describe("homeFor", () => {
+  it("knows only the two public dashboards", () => {
+    expect(homeFor("employer")).toBe("/portal/employer");
+    expect(homeFor("candidate")).toBe("/portal/candidate");
+  });
+
+  it("never points at the staff console", () => {
+    for (const role of ["admin", "recruiter", undefined, null, ""]) expect(homeFor(role)).toBe("/");
+  });
+});
+
+describe("destinationFor", () => {
+  it("sends each account to its own dashboard", () => {
+    expect(destinationFor("employer")).toBe("/portal/employer");
+    expect(destinationFor("candidate", "")).toBe("/portal/candidate");
+  });
+
+  it("returns to the page asked for when it is in that account's own dashboard", () => {
+    expect(destinationFor("employer", "/portal/employer/vacancies/new")).toBe("/portal/employer/vacancies/new");
+    expect(destinationFor("candidate", "/portal/candidate/jobs")).toBe("/portal/candidate/jobs");
+  });
+
+  it("ignores a page that belongs to the other dashboard, or isn't a dashboard", () => {
+    expect(destinationFor("employer", "/portal/candidate/jobs")).toBe("/portal/employer");
+    expect(destinationFor("candidate", "/portal/employer")).toBe("/portal/candidate");
+    expect(destinationFor("candidate", "/console")).toBe("/portal/candidate");
+    expect(destinationFor("employer", "//evil.example/portal/employer")).toBe("/portal/employer");
+    expect(destinationFor("employer", "https://evil.example")).toBe("/portal/employer");
+  });
+
+  it("has nowhere on the public site for staff", () => {
+    expect(destinationFor("admin", "/portal/employer")).toBe("/");
+    expect(destinationFor("recruiter")).toBe("/");
+  });
+});
 
 describe("audienceFor", () => {
   it("knows each dashboard and the pages under it", () => {

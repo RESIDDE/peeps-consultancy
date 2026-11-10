@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { AuthLinks } from "@/components/auth/auth-links";
@@ -7,8 +8,8 @@ import { CodeSignIn } from "@/components/auth/code-sign-in";
 import { requestSignInCode, verifySignInCode } from "@/server/actions/auth";
 import { RESEND_AFTER_SECONDS } from "@/server/otp";
 import { OTP_MINUTES } from "@/lib/auth";
-import { getSession, homeFor } from "@/lib/permissions";
-import { AUDIENCES, SIGN_IN, isAudience, signInHref } from "@/lib/sign-in";
+import { getSession } from "@/lib/permissions";
+import { AUDIENCES, SIGN_IN, SIGN_IN_EMAIL_COOKIE, destinationFor, isAudience, signInHref } from "@/lib/sign-in";
 
 type Props = {
   params: Promise<{ audience: string }>;
@@ -29,10 +30,14 @@ export default async function AudienceSignInPage({ params, searchParams }: Props
   // Any other address goes back to the choice rather than to a dead end.
   if (!isAudience(audience)) redirect(signInHref(null, next));
   const session = await getSession();
-  if (session) redirect(homeFor(session.user.role));
+  // Already signed in as an employer or candidate: straight to that dashboard. Any other
+  // account has nothing on this site, so it gets the form like anyone else.
+  if (session && isAudience(session.user.role)) redirect(destinationFor(session.user.role, next));
 
   const copy = SIGN_IN[audience];
   const other = AUDIENCES.find((a) => a !== audience)!;
+  // An address typed on the other sign-in page and sent here, so it needn't be typed again.
+  const carried = (await cookies()).get(SIGN_IN_EMAIL_COOKIE)?.value;
 
   return (
     <div className="anim-step">
@@ -50,6 +55,8 @@ export default async function AudienceSignInPage({ params, searchParams }: Props
 
       <div className="mt-12">
         <CodeSignIn
+          // A fresh form per page: nothing from the other sign-in carries over but the address.
+          key={audience}
           request={requestSignInCode}
           verify={verifySignInCode}
           next={next}
@@ -57,6 +64,8 @@ export default async function AudienceSignInPage({ params, searchParams }: Props
           resendSeconds={RESEND_AFTER_SECONDS}
           emailLabel={copy.emailLabel}
           emailHint={copy.emailHint}
+          audience={audience}
+          defaultEmail={carried}
         />
       </div>
 

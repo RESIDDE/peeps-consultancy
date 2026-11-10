@@ -3,8 +3,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { AuthLinks } from "@/components/auth/auth-links";
-import { getSession, homeFor } from "@/lib/permissions";
-import { AUDIENCES, SIGN_IN, audienceFor, signInHref } from "@/lib/sign-in";
+import { getSession } from "@/lib/permissions";
+import { AUDIENCES, SIGN_IN, audienceFor, destinationFor, isAudience, signInHref } from "@/lib/sign-in";
 
 export const metadata: Metadata = { title: "Sign in" };
 
@@ -15,13 +15,11 @@ export const metadata: Metadata = { title: "Sign in" };
  * already says which sign-in it needs.
  */
 export default async function SignInPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
-  const session = await getSession();
-  if (session) redirect(homeFor(session.user.role));
   const { next } = await searchParams;
+  const session = await getSession();
+  if (session && isAudience(session.user.role)) redirect(destinationFor(session.user.role, next));
   const known = audienceFor(next);
   if (known) redirect(signInHref(known, next));
-
-  const staffUrl = process.env.NEXT_PUBLIC_ADMIN_URL;
 
   return (
     <div className="anim-step">
@@ -65,15 +63,6 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
           { href: SIGN_IN.employer.register.href, label: SIGN_IN.employer.register.label, note: "For hiring organisations" },
         ]}
       />
-
-      {staffUrl && (
-        <p className="mt-8 text-xs text-muted-foreground">
-          PEEPs staff?{" "}
-          <a href={`${staffUrl}/sign-in`} className="text-foreground underline underline-offset-4 hover:opacity-60">
-            Sign in to the console
-          </a>
-        </p>
-      )}
     </div>
   );
 }

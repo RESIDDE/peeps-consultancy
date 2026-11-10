@@ -1,16 +1,17 @@
 /**
- * Where each role lands after sign-in. Pure — safe for client components.
- * Staff go to the separate admin console app; the main site sets
- * NEXT_PUBLIC_ADMIN_URL to its address (unset inside the console itself).
+ * Where each account lands on the public website. Pure — safe for client components.
+ *
+ * Only employers and candidates have a place here. Staff accounts have nothing on the public
+ * site: the console is reached at its own address, never through a link or a redirect from
+ * this one, so anything else is sent to the home page.
  */
 export function homeFor(role: string | null | undefined): string {
   switch (role) {
-    case "admin":
-    case "recruiter":
-      return `${process.env.NEXT_PUBLIC_ADMIN_URL ?? ""}/console`;
     case "employer":
       return "/portal/employer";
-    default:
+    case "candidate":
       return "/portal/candidate";
+    default:
+      return "/";
   }
 }

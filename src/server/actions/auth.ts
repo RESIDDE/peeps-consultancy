@@ -2,14 +2,14 @@
 
 import { z } from "zod";
 import { eq } from "drizzle-orm";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { APIError } from "better-auth/api";
 import { db } from "@/db";
 import { candidates, employerContacts, employers, user } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { fail, ok, type ActionState } from "@/lib/action-state";
-import { homeFor } from "@/lib/permissions";
+import { destinationFor, isAudience, SIGN_IN, SIGN_IN_EMAIL_COOKIE, signInHref } from "@/lib/sign-in";
 import { isSectorCode, SECTORS } from "@/lib/taxonomy";
 import { CONSENT_VERSION } from "@/lib/consent";
 import { issuePepId } from "../pep";
@@ -49,25 +49,47 @@ async function discardUser(id: string) {
     .catch((e) => console.error(e));
 }
 
-function safeNext(next: string): string | null {
-  return next.startsWith("/") && !next.startsWith("//") ? next : null;
-}
-
 /** Email-shaped enough to ask Better Auth for a code; it does the real validation. */
 const LOOKS_LIKE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** The kind of account an address has, if any. */
+async function roleOf(email: string): Promise<string | null> {
+  const [row] = await db.select({ role: user.role }).from(user).where(eq(user.email, email));
+  return row?.role ?? null;
+}
 
 /**
  * Step one of signing in: email a 6-digit code.
  *
- * Always answers "sent" for a well-formed address, whether or not it has an account. The
- * auth config only emails registered addresses, so this can't be used to find out who has
- * an account.
+ * Only employer and candidate accounts sign in here. Staff accounts sign in on the console
+ * at its own address, and are answered here exactly like an address with no account: "sent",
+ * and nothing is sent. An employer's email typed on the candidate page, or the other way
+ * round, gets no code: it is pointed to its own sign-in, one click away, with the address
+ * carried over.
  */
 export async function requestSignInCode(_: ActionState, fd: FormData): Promise<ActionState> {
   const email = str(fd, "email").toLowerCase();
   if (!LOOKS_LIKE_EMAIL.test(email)) return fail("Enter a valid email address.");
-  // One code a minute per address. Answered as "sent" either way, so this can't reveal
-  // which addresses have accounts; the code sent a moment ago still works.
+
+  const role = await roleOf(email);
+  if (!role || !isAudience(role)) return ok("Code sent.", email);
+  const page = str(fd, "audience");
+  if (isAudience(page) && page !== role) {
+    (await cookies()).set(SIGN_IN_EMAIL_COOKIE, email, {
+      maxAge: 600,
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/sign-in",
+    });
+    return {
+      ...fail(SIGN_IN[role].wrongPage),
+      value: email,
+      suggest: { href: signInHref(role), label: SIGN_IN[role].goLabel },
+    };
+  }
+
+  // One code a minute per address; the code sent a moment ago still works.
   if (await codeSentRecently(email)) return ok("Code sent.", email);
   try {
     await auth.api.sendVerificationOTP({ body: { email, type: "sign-in" }, headers: await headers() });
@@ -80,21 +102,27 @@ export async function requestSignInCode(_: ActionState, fd: FormData): Promise<A
   return ok("Code sent.", email);
 }
 
-/** Step two: check the code and sign in, then go to that user's own dashboard. */
+/**
+ * Step two: check the code and sign in, then go straight to that account's own dashboard.
+ * The role is read from the database, not from the sign-in reply, so an employer always
+ * lands on the employer dashboard and a candidate on the candidate one.
+ */
 export async function verifySignInCode(_: ActionState, fd: FormData): Promise<ActionState> {
   const email = str(fd, "email").toLowerCase();
   const otp = str(fd, "code").replace(/\s+/g, "");
   if (!/^\d{6}$/.test(otp)) return fail("Enter the 6-digit code from the email.");
-  let role: string | undefined;
+  // Checked again here: staff never get a code on this site, and a guessed one must not
+  // open a session for them either.
+  const role = await roleOf(email);
+  if (!role || !isAudience(role)) return fail("That code isn't right. Check the email and try again.");
   try {
-    const res = await auth.api.signInEmailOTP({ body: { email, otp }, headers: await headers() });
-    role = (res.user as { role?: string }).role;
+    await auth.api.signInEmailOTP({ body: { email, otp }, headers: await headers() });
   } catch (e) {
     if (e instanceof APIError) return fail(otpMessage(e));
     console.error(e);
     return fail("Something went wrong. Please try again.");
   }
-  redirect(safeNext(str(fd, "next")) ?? homeFor(role));
+  redirect(destinationFor(role, str(fd, "next")));
 }
 
 export async function signOut() {
