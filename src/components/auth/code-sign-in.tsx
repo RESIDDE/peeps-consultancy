@@ -2,6 +2,9 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
 import { initialActionState, type ActionState, type FormAction } from "@/lib/action-state";
 import { cn } from "@/lib/utils";
 import { Field } from "@/components/ui/field";
@@ -35,6 +38,8 @@ export function CodeSignIn({
   resendSeconds,
   emailLabel = "Email",
   emailHint,
+  audience,
+  defaultEmail,
 }: {
   request: FormAction;
   verify: FormAction;
@@ -47,6 +52,10 @@ export function CodeSignIn({
   emailLabel?: string;
   /** Which address to use, under the field. */
   emailHint?: string;
+  /** Which account type this page is for, so an address of the other type can be redirected. */
+  audience?: string;
+  /** An address to start with, e.g. one carried over from the other sign-in page. */
+  defaultEmail?: string;
 }) {
   const [sent, sendAction] = useActionState<SendState, FormData>(
     async (prev, fd) => {
@@ -77,6 +86,7 @@ export function CodeSignIn({
     return (
       <form action={sendAction} onSubmit={() => setEditing(false)} className={cn("grid gap-5", editing && "anim-step")}>
         <StepHeader step={1} title="Your email" />
+        {audience && <input type="hidden" name="audience" value={audience} />}
         <Field label={emailLabel} name="email" hint={emailHint}>
           <Input
             id="email"
@@ -86,10 +96,14 @@ export function CodeSignIn({
             required
             autoFocus
             // Keeps the address when coming back via "Change email", or after a refusal.
-            defaultValue={sent.value}
+            defaultValue={sent.value ?? defaultEmail}
           />
         </Field>
-        <Problem message={!sent.ok ? sent.message : undefined} at={sent.at} />
+        {sent.suggest ? (
+          <WrongPage message={sent.message} suggest={sent.suggest} />
+        ) : (
+          <Problem message={!sent.ok ? sent.message : undefined} at={sent.at} />
+        )}
         <SubmitButton size="lg" className="mt-1 w-full" pendingText="Sending code…">
           Email me a code
         </SubmitButton>
@@ -171,6 +185,22 @@ function ResendButton({ seconds }: { seconds: number }) {
     <button type="submit" className="underline underline-offset-4 transition-opacity duration-200 hover:opacity-60">
       Didn&apos;t get it? Send a new code
     </button>
+  );
+}
+
+/**
+ * The address belongs to the other kind of account: say so, and offer its sign-in as the
+ * main action. Not styled as an error: nothing is wrong except the page.
+ */
+function WrongPage({ message, suggest }: { message?: string; suggest: { href: string; label: string } }) {
+  return (
+    <div role="alert" className="anim-step grid gap-4 rounded-[7px] border border-foreground/20 bg-foreground/[0.03] p-4">
+      <p className="text-sm leading-snug">{message}</p>
+      <Link href={suggest.href} className={cn(buttonVariants({ variant: "ink" }), "group w-full sm:w-fit")}>
+        {suggest.label}
+        <ArrowRight aria-hidden className="transition-transform duration-200 group-hover:translate-x-0.5" />
+      </Link>
+    </div>
   );
 }
 

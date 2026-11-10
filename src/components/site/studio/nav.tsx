@@ -10,6 +10,7 @@ import { TalentProfileCard } from "@/components/site/talent-profile-card";
 import { COMPANY, LIVE_VERTICALS, SOON_VERTICALS, VERTICALS } from "@/lib/content";
 import { AUTO_CHECK, OFFERINGS } from "@/lib/services";
 import { homeFor } from "@/lib/roles";
+import { isAudience } from "@/lib/sign-in";
 import { cn } from "@/lib/utils";
 import { CtaLine, Roll } from "./cta-line";
 
@@ -144,7 +145,8 @@ export function StudioNav() {
     fetch("/api/auth/get-session", { signal: ctrl.signal, credentials: "same-origin" })
       .then((r) => (r.ok ? r.json() : null))
       .then((s: { user?: { role?: string } } | null) => {
-        if (s?.user) setAccountHref(homeFor(s.user.role));
+        // Only employers and candidates have a dashboard on this site.
+        if (s?.user?.role && isAudience(s.user.role)) setAccountHref(homeFor(s.user.role));
       })
       .catch(() => {});
     return () => ctrl.abort();

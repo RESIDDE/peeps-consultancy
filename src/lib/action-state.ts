@@ -6,6 +6,8 @@ export interface ActionState {
   at?: number;
   /** A value the action hands back to the form, e.g. the normalised email a code went to. */
   value?: string;
+  /** Where this request belongs instead, offered with `message` as a one-click link. */
+  suggest?: { href: string; label: string };
 }
 
 export const initialActionState: ActionState = { ok: false };
